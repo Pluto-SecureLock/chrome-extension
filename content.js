@@ -142,15 +142,15 @@ async function sendCredentials(domain) {
 
         // Request authentication status by sending "auth ?" command
         console.log("Requesting auth status from Pluto...");
-        await writer.write("auth ?\n");
+        // await writer.write("auth ?\n");
 
-        // Wait briefly to give the device time to respond
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // // Wait briefly to give the device time to respond
+        // await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Read the response from the device (assume single-chunk response)
-        const { value } = "True"//await reader.read("\n");
+        // // Read the response from the device (assume single-chunk response)
+        // const { value } = await reader.read("\n");
         reader.releaseLock();
-        const authResponse = value ? value.trim() : "";
+        const authResponse = "True"//value ? value.trim() : "";
         console.log("Device auth response:", authResponse);
 
         // If the device is not authenticated, then send the auth key
@@ -174,7 +174,7 @@ async function sendCredentials(domain) {
 
         // Send the "get" command with the domain
         statusBanner.innerText = `Sending get ${domain} command…`;
-        await writer.write(`get ${domain}\r\n`);
+        await writer.write(`type ${domain}\r\n`);
 
         // Release the writer lock and wait for stream closure
         writer.releaseLock();
@@ -214,7 +214,7 @@ async function autoConnect() {
     let domain = window.location.hostname;
     if (domain === "") { 
         // If hostname is empty, assume it's localhost.
-        domain = "facebook"; // For localhost, use a different identifier.
+        domain = "gmail.com"; // For localhost, use a different identifier.
     }
 
     // Attempt auto-connection on page load
