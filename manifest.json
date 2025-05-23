@@ -1,32 +1,40 @@
 {
+  "_comment": "content_scripts not necessary for now since the passwords are typed out by the device not the Extension",
   "manifest_version": 3,
-  "name": "Pluto Login Detector",
-  "version": "1.0",
-  "description": "Detect login forms and notify the local SecureKeyVault app",
+  "name": "Pluto Extension",
+  "version": "0.1",
+  "description": "Pluto Extension Helper Extension",
+  "author": "Giorgi Japaridze",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "sources/icon16.png",
+      "32": "sources/icon32.png",
+      "64": "sources/icon64.png",
+      "128": "sources/icon128.png"
+    },
+    "default_title": "Pluto Helper"
+  },
+  "background": {
+  "scripts": ["background.js"]
+},
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }],
+
+"icons": {
+    "16": "sources/iconfull16.png",
+    "32": "sources/iconfull32.png",
+    "64": "sources/iconfull64.png",
+    "128": "sources/iconfull128.png"
+  },
   "permissions": [
     "activeTab",
     "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
-  ],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png"
-    }
-  },
-  "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
-  }
+  ]
 }
