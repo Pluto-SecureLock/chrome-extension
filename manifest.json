@@ -15,13 +15,11 @@
     },
     "default_title": "Pluto Helper"
   },
-  "background": {
-  "scripts": ["background.js"]
-},
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"]
+
     }],
 
 "icons": {

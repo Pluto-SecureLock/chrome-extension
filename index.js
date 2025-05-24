@@ -40,51 +40,38 @@
 //^WebUSB implementation
 
 //v Serial API implementation
-
-
-document.getElementById("pairBtn").addEventListener("click", async function () {
-    try {
-        const port = await navigator.serial.requestPort({
-            filters: [{ usbVendorId: 0x239A }] // Optional: specific to your board
-        });
-
-        await port.open({ baudRate: 9600 });
-
-        // Prepare to send data
-        const encoder = new TextEncoderStream();
-        const writableStreamClosed = encoder.readable.pipeTo(port.writable);
-        const writer = encoder.writable.getWriter();
-
-        const input = document.querySelector('input[type="text"], input[type="email"], input[type="password"]');
-        if (input) input.focus();
-
-        await writer.write("type gmail.com\n");
-
-        // await writer.write("showkeys gmail.com\r\n");
-        writer.releaseLock();
-
-        // Prepare to read response
-        const decoder = new TextDecoderStream();
-        const readableStreamClosed = port.readable.pipeTo(decoder.writable);
-        const reader = decoder.readable.getReader();
-
-        let response = "";
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            if (value) {
-                response += value;
-                if (value.includes("\n")) break; // stop after full line received
-            }
-        }
-
-        console.log("Device response:", response.trim());
-
-        reader.releaseLock();
-        await readableStreamClosed;
-        await writableStreamClosed;
-        await port.close();
-    } catch (err) {
-        console.error("Serial error:", err);
-    }
-});
+// document.getElementById("pairBtn").addEventListener("click", () => {
+//     try {
+//         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//             if (!tabs[0]) return; // if theres no active tab exit
+            
+//             // Try to inject content script first, then send message
+//             chrome.scripting.executeScript({
+//                 target: { tabId: tabs[0].id },
+//                 files: ['content.js']
+//             }, () => {
+//                 chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, (response) => {
+//                     if (chrome.runtime.lastError) {
+//                         console.error("Message failed:", chrome.runtime.lastError.message);
+//                     } else {
+//                         console.log("Message sent successfully, response:", response);
+//                     }
+//                 });
+//             });
+//         });
+//     } catch (err) {
+//         console.error("Error connecting:", err);
+//     }
+// });
+document.getElementById("pairBtn").addEventListener("click", () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) return;
+      chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Message failed:", chrome.runtime.lastError.message);
+                    } else {
+                        console.log("Message sent successfully, response:", response);
+    }});
+    });
+  });
+  
