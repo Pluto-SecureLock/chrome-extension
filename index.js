@@ -111,3 +111,12 @@ document.getElementById("getBtn").addEventListener("click", () => {
     });
     window.close(); //need it, otherwise the extension window is focused and the HID inputs are misinterpreted
   }); 
+
+  document.getElementById('openWindow').addEventListener('click', function() {
+  chrome.windows.create({
+    url: 'window.html',   // This is the standalone page you want to open
+    type: 'popup',
+    width: 800,
+    height: 600
+  });
+});
