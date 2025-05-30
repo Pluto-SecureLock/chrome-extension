@@ -10,13 +10,22 @@
     </head>
     <body>
         <p>Pluto Extension</p>
+        
+        <input type="text" id="searchInput" placeholder="Search..." />
+        <ul id="suggestions"></ul>
+        <table>
+  <thead>
+    <tr><th>Stored Keys</th></tr>
+  </thead>
+  <tbody id="keyTableBody"></tbody>
+</table>
 
         <button id="pairBtn">Pair the device</button>
         <button id="showKeysBtn">Show Keys</button>
         <button id="typeBtn">Type</button>
         <button id="getBtn">Get</button>
         <button id="openWindow">Open in Standalone Window</button>
-        
+
 
         <script src="./index.js" ></script>
     </body>
