@@ -69,6 +69,31 @@
 
 
 
+chrome.storage.local.get("plutonConnected", (result) => {
+  if (result.plutonConnected) {
+    console.log("inside ")
+    navigator.serial.getPorts().then(ports => {
+      console.log(ports)
+  if (ports.length > 0) {
+    console.log("again inside")
+    // Still paired
+    document.querySelector(".InitBox").classList.add("hidden");
+                        document.querySelectorAll(".ActiveBox").forEach(el => {
+  el.classList.remove("hidden");
+});
+const body = document.querySelector("body");
+body.classList.remove("min-h-[280px]", "w-[360px]");
+body.classList.add("h-[600px]", "w-[400px]");
+    
+  } else {
+    chrome.storage.local.set({ plutonConnected: false });
+  }
+});
+
+  }
+});
+
+
 document.getElementById("pairBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
@@ -77,6 +102,19 @@ document.getElementById("pairBtn").addEventListener("click", () => {
                         console.log("Message failed:", chrome.runtime.lastError.message);
                     } else {
                         console.log("Message sent successfully, response:", response);
+                        chrome.storage.local.set({ plutonConnected: true }, () => {
+          // Update the UI immediately
+          document.querySelector(".InitBox").classList.add("hidden");
+          document.querySelectorAll(".ActiveBox").forEach(el => {
+            el.classList.remove("hidden");
+          });
+
+          const body = document.querySelector("body");
+          body.classList.remove("min-h-[280px]", "w-[360px]");
+          body.classList.add("h-[600px]", "w-[400px]");
+        });
+                        
+
     }});
     });
   });

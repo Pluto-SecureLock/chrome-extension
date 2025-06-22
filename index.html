@@ -8,24 +8,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="./output.css" />
   </head>
-  <body class = "min-h-[480px] w-[360px] flex flex-col items-center font-sans">
-    <p>Pluto Extension</p>
+  <body class = "min-h-[280px] w-[360px] flex flex-col items-center font-sans">
 
-    <div class="current-mission-card w-9/10 h-[30vh] rounded-md m-3">
-    <button class = "bg-blue-700 text-amber-50 text-shadow-white p-2 rounded-full hover:scale-110 transition-transform duration-200" id="pairBtn">Pair the device</button>
-    <button id="showKeysBtn">Show Keys</button>
-    <button id="typeBtn">Type</button>
-    <button id="getBtn">Get</button>
-    <button id="openWindow">Open in Standalone Window</button>
+   <div class="flex items-center justify-center pb-4 border-b border-[#E5E7EB] my-3 w-19/20 ">
+        <div class="flex flex-col items-center mr-5">
+            <span class="text-2xl font-black tracking-widest uppercase text-rio-blue select-none">Pluto</span>
+            <span class="text-md font-black tracking-widest uppercase text-rio-blue select-none font-mono">SecureLock</span>
+        </div>
+        <div class="flex items-center space-x-3 absolute right-5">
+          <!-- Dark Mode Toggle -->
+            <button id="darkModeToggle" class="hover:opacity-85 cursor-pointer p-2 rounded-full bg-eerie-black opacity-100 dark:text-gray-200 shadow-sm shadow-eerie-black transition-all duration-300 focus:outline-none">
+                <!-- Moon Icon -->
+                <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="#FFFFFF" viewBox="0 0 24 24" stroke="#FFFFFF" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+                <!-- Sun Icon (hidden by default) -->
+                <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </button>
+            <!-- Settings Icon
+            <button class="text-eerie-black opacity-75 hover:opacity-100 transition-opacity duration-200 focus:outline-none cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.527.288 1.137.387 1.724.067z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button> -->
+        </div>
+    </div>
+
+
+    <div class="current-mission-card w-9/10 h-[150px] rounded-md m-3 flex justify-center items-center">
+      <div class="InitBox">
+        <button class = "bg-blue-700 text-amber-50 text-shadow-white p-2 rounded-[10px] hover:scale-110 transition-transform duration-200 cursor-pointer text-[15px] font-bold" id="pairBtn">Pair the device</button>
+      </div>
+    
+        <div class="ActiveBox hidden">
+          <button id="showKeysBtn">Show Keys</button>
+          <button id="typeBtn">Type</button>
+          <button id="getBtn">Get</button>
+          <button id="openWindow">Open in Standalone Window</button>
+        </div>
+    
     </div>
    
 
-
+<div class="ActiveBox hidden">
     <input type="text" class="bg-gray-100 hover:bg-gray-200 h-[10vh] w-9/10 rounded-md p-5 text-base font-bold" id="searchInput" placeholder="Search..." />
     <ul id="suggestions"></ul>
 
     
-<div>
+
 <table>
       <thead>
         <tr>
@@ -41,12 +74,14 @@
 
  
 
-
-    <div class="flex flex-row absolute bottom-0">
+<div class="ActiveBox hidden">
+<div class="flex flex-row absolute bottom-0">
       <div class="navbutton">The Vault</div>
       <div class="navbutton">Generate Passwords</div>
       <div class="navbutton">Settings</div>
     </div>
+</div>
+    
     <script src="./index.js"></script>
   </body>
 </html>

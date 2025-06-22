@@ -110,27 +110,36 @@ async function commandSerial(port, action, domain = ""){
     }
 }
 
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message);
+  
   if (message.action === "PlutoInit") {
-    openedPort = await openSerial();
-    sendResponse({ status: "InitReceived OK" });
-    return true;
-  } else {
-    if (!openedPort) {
-      sendResponse({ status: "Error: Device not connected." });
-      return true;
-    }
-
-    const result = await commandSerial(openedPort, message.action, message.domain || '');
-
-    // Instead of relying on sendResponse, push the data back:
-    chrome.runtime.sendMessage({
-      action: "showKeysResponse",
-      data: result
+    openSerial().then(port => {
+      openedPort = port;
+      sendResponse({ status: "InitReceived OK" });
+    }).catch(err => {
+      sendResponse({ status: "Error", error: err.message });
     });
 
-    sendResponse({ status: message.action + " OK" });
-    return true;
+    return true; // Keep channel open
   }
+
+  if (!openedPort) {
+    sendResponse({ status: "Error: Device not connected." });
+    return false;
+  }
+
+  commandSerial(openedPort, message.action, message.domain || '')
+    .then(result => {
+      chrome.runtime.sendMessage({
+        action: "showKeysResponse",
+        data: result
+      });
+      sendResponse({ status: message.action + " OK" });
+    })
+    .catch(err => {
+      sendResponse({ status: "Error", error: err.message });
+    });
+
+  return true; // Keep channel open
 });

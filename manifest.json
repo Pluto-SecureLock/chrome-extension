@@ -5,6 +5,9 @@
   "version": "0.1",
   "description": "Pluto Extension Helper Extension",
   "author": "Giorgi Japaridze",
+  "background": {
+  "service_worker": "background.js"
+},
   "action": {
     "default_popup": "index.html",
     "default_icon": {
@@ -31,7 +34,8 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "windows"
+    "windows",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
