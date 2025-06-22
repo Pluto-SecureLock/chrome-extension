@@ -1,32 +1,52 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Pluton Extension</title>
-        <meta name="description" content="pluto extension 0.1">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="./styles.css">
-    </head>
-    <body>
-        <p>Pluto Extension</p>
-        
-        <input type="text" id="searchInput" placeholder="Search..." />
-        <ul id="suggestions"></ul>
-        <table>
-  <thead>
-    <tr><th>Stored Keys</th></tr>
-  </thead>
-  <tbody id="keyTableBody"></tbody>
-</table>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Pluton Extension</title>
+    <meta name="description" content="pluto extension 0.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./output.css" />
+  </head>
+  <body class = "min-h-[480px] w-[360px] flex flex-col items-center font-sans">
+    <p>Pluto Extension</p>
 
-        <button id="pairBtn">Pair the device</button>
-        <button id="showKeysBtn">Show Keys</button>
-        <button id="typeBtn">Type</button>
-        <button id="getBtn">Get</button>
-        <button id="openWindow">Open in Standalone Window</button>
+    <div class="current-mission-card w-9/10 h-[30vh] rounded-md m-3">
+    <button class = "bg-blue-700 text-amber-50 text-shadow-white p-2 rounded-full hover:scale-110 transition-transform duration-200" id="pairBtn">Pair the device</button>
+    <button id="showKeysBtn">Show Keys</button>
+    <button id="typeBtn">Type</button>
+    <button id="getBtn">Get</button>
+    <button id="openWindow">Open in Standalone Window</button>
+    </div>
+   
 
 
-        <script src="./index.js" ></script>
-    </body>
+    <input type="text" class="bg-gray-100 hover:bg-gray-200 h-[10vh] w-9/10 rounded-md p-5 text-base font-bold" id="searchInput" placeholder="Search..." />
+    <ul id="suggestions"></ul>
+
+    
+<div>
+<table>
+      <thead>
+        <tr>
+          <th>Stored Keys</th>
+        </tr>
+      </thead>
+      <tbody id="keyTableBody"></tbody>
+    </table>
+
+</div>
+    
+
+
+ 
+
+
+    <div class="flex flex-row absolute bottom-0">
+      <div class="navbutton">The Vault</div>
+      <div class="navbutton">Generate Passwords</div>
+      <div class="navbutton">Settings</div>
+    </div>
+    <script src="./index.js"></script>
+  </body>
 </html>
