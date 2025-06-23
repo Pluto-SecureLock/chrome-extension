@@ -46,6 +46,8 @@ async function commandSerial(port, action, domain = ""){
         const encoder = new TextEncoder();
         await writer.write(encoder.encode(command));
 
+
+
         let response = "";
         let temp = 0;
         const decoder = new TextDecoder();
@@ -124,10 +126,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep channel open
   }
 
+
   if (!openedPort) {
     sendResponse({ status: "Error: Device not connected." });
     return false;
   }
+
 
   commandSerial(openedPort, message.action, message.domain || '')
     .then(result => {
