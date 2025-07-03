@@ -96,7 +96,7 @@ document.getElementById("showKeysBtn").addEventListener("click", () => {
 document.getElementById("getBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: "gmail.com"}, (response) => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: "gmail"}, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error("Message failed:", chrome.runtime.lastError.message);
                     } else {
@@ -108,7 +108,7 @@ document.getElementById("getBtn").addEventListener("click", () => {
   document.getElementById("typeBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: "gmail.com"}, (response) => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: "gmail"}, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error("Message failed:", chrome.runtime.lastError.message);
                     } else {
