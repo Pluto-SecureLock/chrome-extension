@@ -121,3 +121,24 @@ input:focus {
 .hidden {
     display: none !important;
 }
+.add-svg-button-icon {
+  background-color: #007bff; /* Blue */
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; /* Allows icon and text to sit side-by-side */
+  align-items: center; /* Vertically aligns icon and text */
+  gap: 8px; /* Space between icon and text */
+  transition: background-color 0.3s ease;
+}
+
+.add-svg-button-icon:hover {
+  background-color: #0056b3;
+}
+
+.add-svg-button-icon svg {
+  vertical-align: middle; /* Ensures proper alignment if not using flexbox */
+}

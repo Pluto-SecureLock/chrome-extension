@@ -1,12 +1,7 @@
-
-
 let openedPort = null;
-let showKeys_response = new Promise((resolve, reject) => {
-    
-})
 
 async function openSerial(){
-try {
+    try {
         const port = await navigator.serial.requestPort({
             filters: [{ usbVendorId: 0x239A }] // Optional: specific to your board
         });
@@ -14,26 +9,24 @@ try {
         await port.open({ baudRate: 9600 });
 
         return port;
-        // await port.close();
     } catch (err) {
         console.error("Serial error:", err);
     }
-           }
+}
 
-
-
-async function commandSerial(port, action, domain = ""){
+// Modify commandSerial to accept 'secrets', 'username', and 'password' for relevant commands
+async function commandSerial(port, action, domain = "", secrets = "", username = "", password = "") { // Add new parameters
     try {
-     
         const writer = port.writable.getWriter();
         const reader = port.readable.getReader();
 
         // focus input field for type commands
         if (action == "typeKeyPluto") {
             const input = document.querySelector('input[type="text"], input[type="email"], input[type="password"]'); // select password field separately for security
-            if (input)   input.select();
+            if (input) input.select();
         }
-
+        console.log(action, "Updating key for domain:", domain, "with username:", username, "and password:", password);
+        
         let command = "";
         if (action == "showKeysPluto"){
             command = "showkeys \n";
@@ -41,6 +34,13 @@ async function commandSerial(port, action, domain = ""){
             command = "get " + domain + "\n";
         } else if (action == "typeKeyPluto"){
             command = "type " + domain + "\n";
+        } else if (action == "bulkAddPluto") {
+            command = "bulkadd " + secrets + "\n"; // Correctly use the passed 'secrets'
+        } else if (action == "updateKeyPluto") {
+            //modify example.com[username:alice_wonder,password:newP@ss,note:2FA enabled]
+            command = `modify ${domain}[username:${username},password:${password}]\n`;
+        } else {
+            throw new Error("Unknown action: " + action);
         }
 
         const encoder = new TextEncoder();
@@ -67,9 +67,9 @@ async function commandSerial(port, action, domain = ""){
                     }
                 }
             }
-        } else if (action == "getKeyPluto") {
-            // for get commands, wait a bit longer to ensure we get the actual data
-            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+        } else if (action == "getKeyPluto" || action === "typeKeyPluto" || action === "updateKeyPluto") { // Group common single-line responses, include update
+            // for get, type, and update commands, read until first newline
+            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for get
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
@@ -82,20 +82,18 @@ async function commandSerial(port, action, domain = ""){
                     }
                 }
             }
-        } else if (action == "typeKeyPluto") {
-            // for type commands, just read until first newline
+        } else if (action == "bulkAddPluto") {
+            // For bulkAdd, read until the stream is done to ensure all lines are captured.
+            let fullResponse = ""; // Accumulate all chunks
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
                 if (value) {
                     const text = decoder.decode(value);
-                    response += text;
-                    
-                    if (text.includes("\n")) {
-                        break;
-                    }
+                    fullResponse += text;
                 }
             }
+            response = fullResponse; // Assign the complete response
         }
 
         console.log("Device response:", response.trim());
@@ -107,6 +105,7 @@ async function commandSerial(port, action, domain = ""){
 
     } catch (err) {
         console.error("Serial error:", err);
+        return "ERROR: " + err.message; // Return an error message for better feedback
     }
 }
 
@@ -122,11 +121,36 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       return true;
     }
 
-    const result = await commandSerial(openedPort, message.action, message.domain || '');
+    // Pass message.secrets, message.username, message.password to commandSerial
+    const result = await commandSerial(
+        openedPort, 
+        message.action, 
+        message.domain || '', 
+        message.secrets || '',
+        message.username || '', // Pass username
+        message.password || ''  // Pass password
+    );
 
-    // Instead of relying on sendResponse, push the data back:
+    // Dynamically determine the response action based on the original message action
+    let responseAction;
+    if (message.action === "showKeysPluto") {
+        responseAction = "showKeysResponse";
+    } else if (message.action === "getKeyPluto") {
+        responseAction = "getKeyResponse";
+    } else if (message.action === "bulkAddPluto") {
+        responseAction = "bulkAddResponse"; // New action for bulkAdd
+    } else if (message.action === "updateKeyPluto") { // NEW: Action for update
+        responseAction = "updateKeyResponse";
+    } else {
+        // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
+        // we can simply send a success status and return.
+        sendResponse({ status: message.action + " OK" });
+        return true; 
+    }
+
+    // Send the response back to the extension popup (index.js)
     chrome.runtime.sendMessage({
-      action: "showKeysResponse",
+      action: responseAction,
       data: result
     });
 
