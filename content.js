@@ -38,7 +38,7 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
             command = "bulkadd " + secrets + "\n"; // Correctly use the passed 'secrets'
         } else if (action == "updateKeyPluto") {
             //modify example.com[username:alice_wonder,password:newP@ss,note:2FA enabled]
-            command = `modify ${domain}[username:${username},password:${password}]\n`;
+            command = `update ${domain}[username:${username},password:${password}]\n`;
         } else {
             throw new Error("Unknown action: " + action);
         }
