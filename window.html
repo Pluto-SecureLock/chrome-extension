@@ -1,20 +1,213 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Pluton Extension</title>
-        <meta name="description" content="pluto extension 0.1">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="./styles.css">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Pluto SecureLock - Rebel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./output.css" />
     </head>
-    <body>
-        <p>Pluto Extension</p>
+<body class="p-4">
+    <div class="flex items-center justify-between pb-4 border-b border-light-gray mb-4">
+        <div class="flex items-center">
+            <img src="./sources/Pluto3.png" alt="Pluto Logo" class="h-8 mr-2">
+            <span class="text-xl font-black text-rio-blue tracking-widest uppercase">Pluto</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button id="pairBtn" class="p-2 rounded-full bg-mindaro text-eerie-black shadow-lg hover:scale-110 transition-transform duration-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+            </button>
+            <button id="openWindow" class="text-eerie-black opacity-75 hover:opacity-100 transition-opacity hover:scale-105 transition-transform duration-200 focus:outline-none" title="Open in Standalone Window">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <image href="sources/share.png"
+                    width="20" height="20" />
+                </svg>
+            </button>
+        </div>
+    </div>
 
-       
-        <button id="closeWindow">close Standalone Window</button>
-        
+    <div id="coreView" class="tab-content">
+    <div class="current-mission-card p-4 rounded-xl mb-4 shadow-dynamic transition-transform duration-300 transform-gpu">
+        <div class="current-mission-content">
+            <div class="flex justify-between items-start mb-3">
+                <h2 class="text-xs font-extrabold text-mindaro uppercase tracking-wider">Current Mission</h2>
+                <button id="modifyBtn" class="hover:scale-110 transition-transform duration-200 focus:outline-none" title="Modify credentials">
+                    <svg id="modifyIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    <svg id="uploadIcon" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(45deg);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+            <p id="currentSite" class="text-lg font-extrabold mb-2 break-words">Loading...</p>
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <p class="text-sm font-semibold opacity-90">Username</p>
+                    <p id="usernameField" class="text-md font-bold" contenteditable="false">Loading...</p> </div>
+                  <button id="getBtn" class="bg-white text-rio-blue p-2 rounded-full hover:scale-110 transition-transform duration-200" title="Get Key">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-semibold opacity-90">Password</p>
+                    <p id="passwordField" class="text-md font-bold" contenteditable="false">••••••••••••</p> </div>
+                <div class="flex space-x-2">
+                    <button id="viewPasswordBtn" class="bg-white text-rio-blue p-2 rounded-full hover:scale-110 transition-transform duration-200" title="View Password">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                    <button id="typeBtn" class="bg-white text-rio-blue p-2 rounded-full hover:scale-110 transition-transform duration-200" title="Type Key">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <script src="./index.js" ></script>
-    </body>
+    <div class="grid grid-cols-3 gap-2 mb-4">
+        <div class="col-span-2 bg-light-gray p-3 rounded-lg shadow-sm search-container">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-rio-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" id="searchInput" placeholder="Intel Search..." class="flex-1 bg-transparent text-eerie-black font-semibold focus:outline-none">
+            </div>
+            <ul id="suggestions" class="suggestions-list"></ul>
+        </div>
+        <button id="genKeys" class="bg-mindaro p-3 rounded-lg shadow-sm text-eerie-black font-semibold flex justify-center items-center hover:shadow-glow-mindaro transition-shadow duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            KEYS
+        </button>
+    </div>
+
+    <div class="flex-grow bg-light-gray p-3 rounded-lg shadow-inner mb-4 overflow-y-auto">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-sm font-extrabold text-rio-blue uppercase">Encrypted Archives</h3>
+            <span class="text-xs text-gray-subtle">Recent Operations</span>
+        </div>
+
+        <!-- The container for dynamically generated cards -->
+        <div id="keyCardsContainer" class="grid grid-cols-1 gap-2">
+            <!-- Cards will be inserted here by JavaScript -->
+        </div>
+
+        <!-- The button is now styled differently and placed after the container -->
+        <button id="showKeysBtn" class="w-full bg-rio-blue text-white py-2 rounded-lg mt-2 font-bold uppercase tracking-wide hover:scale-105 transition-transform duration-200 shadow-lg hover:shadow-glow-rio-blue">
+            Unleash Full Vault
+        </button>
+    </div>
+  
+    </div>
+
+    <!-- <div id="addView" class="tab-content hidden flex flex-col items-center justify-center p-4">
+        <h3 class="text-xl font-bold text-rio-blue mb-4">Add your Secrets</h3>
+        <textarea id="bulkSecretsTextarea"
+                  class="w-full h-48 p-3 mb-4 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y"
+                  placeholder="Paste your secrets here..."></textarea>
+        <button id="sendSecretsBtn"
+                class="bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:bg-mindaro hover:text-eerie-black transition-colors duration-200 shadow-lg hover:shadow-glow-mindaro">
+            Send Secrets
+        </button>
+    </div> -->
+
+    <!-- Add View With bulk and single add -->
+    <div id="addView" class="tab-content hidden flex flex-col items-center justify-center p-4">
+      <h3 class="text-xl font-bold text-rio-blue mb-4">Add your Secrets</h3>
+
+      <div class="w-full flex justify-center mb-4">
+          <button id="toggleAddModeBtn"
+                  class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
+              Switch to Single Add
+          </button>
+      </div>
+
+      <div id="bulkAddContainer" class="w-full">
+          <textarea id="bulkSecretsTextarea"
+                    class="w-full h-48 p-3 mb-4 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y"
+                    placeholder="Paste your secrets here, e.g., site,url,username,password,note"></textarea>
+          <button id="sendSecretsBtn"
+                  class="bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:bg-mindaro hover:text-eerie-black transition-colors duration-200 shadow-lg hover:shadow-glow-mindaro">
+              Send Bulk Secrets
+          </button>
+      </div>
+
+      <div id="singleAddContainer" class="w-full hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                  <label for="singleHostField_opt3" class="block text-sm font-medium text-gray-700">Host (Site Name)</label>
+                  <input type="text" id="singleHostField_opt3"
+                        class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue"
+                        placeholder="e.g., amazon">
+              </div>
+              <div>
+                  <label for="singleUsernameField_opt3" class="block text-sm font-medium text-gray-700">Username</label>
+                  <input type="text" id="singleUsernameField_opt3"
+                        class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue"
+                        placeholder="e.g., alice@example.com">
+              </div>
+              <div class="md:col-span-2">
+                  <label for="singlePasswordField_opt3" class="block text-sm font-medium text-gray-700">Password</label>
+                  <input type="password" id="singlePasswordField_opt3"
+                        class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue"
+                        placeholder="Enter password">
+              </div>
+              <div class="md:col-span-2">
+                  <label for="singleNotesField_opt3" class="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+                  <textarea id="singleNotesField_opt3"
+                            class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y h-24"
+                            placeholder="Any relevant notes, e.g., '2FA enabled'"></textarea>
+              </div>
+          </div>
+          <button id="sendSingleSecretBtn_opt3"
+                  class="bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:bg-mindaro hover:text-eerie-black transition-colors duration-200 shadow-lg hover:shadow-glow-mindaro">
+              Add Credential
+          </button>
+      </div>
+    </div>
+
+    <div id="settingsView" class="tab-content hidden flex flex-col items-center justify-center p-4">
+    <h3 class="text-xl font-bold text-rio-blue mb-4">Settings</h3>
+    <p class="text-gray-subtle">Settings content goes here.</p>
+    </div>
+
+    <div class="flex justify-around items-center pt-4 border-t border-light-gray">
+        <button class="flex flex-col items-center flex-1 tab-button active px-2 py-1 rounded-md hover:bg-gray-100 transition-colors duration-200 focus:outline-none" data-tab="core">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-mindaro" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v2H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-4 4a4 4 0 018 0v2H6V6z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-xs font-semibold text-mindaro uppercase">My Vault</span>
+        </button>
+
+        <button
+          class="flex flex-col items-center flex-1 tab-button px-2 py-1 rounded-md hover:bg-gray-100 transition-colors duration-200 focus:outline-none" data-tab="add">
+          <svg class="h-6 w-6 mb-1 text-eerie-black opacity-60" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <image href="sources/add.svg"
+                  width="20" height="20" />
+          </svg>
+          <span class="text-xs font-semibold text-gray-subtle uppercase">Add Secrets</span>
+        </button>
+
+        <button class="flex flex-col items-center flex-1 tab-button px-2 py-1 rounded-md hover:bg-gray-100 transition-colors duration-200 focus:outline-none" data-tab="settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-eerie-black opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.527.288 1.137.387 1.724.067z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="text-xs font-semibold text-gray-subtle uppercase">Settings</span>
+        </button>
+    </div>
+    <script src="./index.js"></script>
+</body>
 </html>

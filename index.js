@@ -2,6 +2,7 @@
 let currentPassword = "";
 let isPasswordVisible = false;
 let isEditMode = false;
+let isBulkMode = true;
 
 // Populate currentMission with the current website hostname on load
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,6 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("currentSite").textContent = "No active tab";
         }
     });
+
+    const toggleAddModeBtn = document.getElementById('toggleAddModeBtn');
+    const bulkAddContainer = document.getElementById('bulkAddContainer');
+    const singleAddContainer = document.getElementById('singleAddContainer');
+    const bulkAddIcon = document.getElementById('bulkAddIcon');
+    const singleAddIcon = document.getElementById('singleAddIcon');
+
+    // Initial state: Bulk Add is active, so bulkAddIcon should be hidden and singleAddIcon visible
+    bulkAddIcon.classList.add('hidden');
+    singleAddIcon.classList.remove('hidden');
 
     // Initialize tab visibility
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -134,7 +145,7 @@ document.getElementById("typeBtn").addEventListener("click", () => {
     window.close(); //need it, otherwise the extension window is focused and the HID inputs are misinterpreted
   });
 
-// Event listener for sendSecretsBtn (Modified)
+// Event listener for sendSecretsBtn
 document.getElementById("sendSecretsBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
@@ -150,7 +161,51 @@ document.getElementById("sendSecretsBtn").addEventListener("click", () => {
     });
     });
   });
-// Event listener for openWindow
+
+// Event listener for “Add Credential” (Single Add)
+document.getElementById("AddCredentialBtn").addEventListener("click", () => {
+  // 1 ▸ Tomar los valores del formulario
+  const host     = document.getElementById("singleHostField").value.trim();
+  const username = document.getElementById("singleUsernameField").value.trim();
+  const password = document.getElementById("singlePasswordField").value.trim();
+  const note     = document.getElementById("singleNotesField").value.trim();
+
+  // (opcional) Validación rápida
+  if (!host || !username || !password) {
+    alert("Host, Username y Password son obligatorios");
+    return;
+  }
+
+  // 2 ▸ Armar el string en el mismo formato que espera Pluto:
+  //     modify example.com[username:...,password:...,note:...]
+  const secretsToSend =
+    `${host}:${host},${username},${password},${note}`;
+
+  // 3 ▸ Enviar al content-script
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]) return;
+
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { action: "singleAddPluto", secrets: secretsToSend },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Message failed:", chrome.runtime.lastError.message);
+          return;
+        }
+        console.log("Credential sent:", response);
+
+        // 4 ▸ Limpia el formulario tras éxito
+        ["singleHostField",
+         "singleUsernameField",
+         "singlePasswordField",
+         "singleNotesField"].forEach(id => document.getElementById(id).value = "");
+      }
+    );
+  });
+});
+
+  // Event listener for openWindow
 document.getElementById('openWindow').addEventListener('click', function() {
   chrome.windows.create({
     url: 'window.html',   // This is the standalone page you want to open
@@ -244,6 +299,26 @@ document.getElementById("modifyBtn").addEventListener("click", () => {
             });
         });
     }
+});
+
+// Event listener for openWindow
+document.getElementById('modeToggleButton').addEventListener('click', function() {
+    if (isBulkMode) {
+        // Switch to Single Add mode
+        bulkAddContainer.classList.add('hidden');
+        singleAddContainer.classList.remove('hidden');
+        
+        bulkAddIcon.classList.remove('hidden'); // Show bulk icon
+        singleAddIcon.classList.add('hidden'); // Hide single icon
+    } else {
+        // Switch to Bulk Add mode
+        singleAddContainer.classList.add('hidden');
+        bulkAddContainer.classList.remove('hidden');
+
+        singleAddIcon.classList.remove('hidden'); // Hide bulk icon
+        bulkAddIcon.classList.add('hidden'); // Show single icon
+    }
+    isBulkMode = !isBulkMode; // Toggle the mode
 });
 
 // Consolidated chrome.runtime.onMessage.addListener

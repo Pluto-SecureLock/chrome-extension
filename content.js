@@ -39,6 +39,9 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
         } else if (action == "updateKeyPluto") {
             //modify example.com[username:alice_wonder,password:newP@ss,note:2FA enabled]
             command = `update ${domain}[username:${username},password:${password}]\n`;
+        } else if (action == "singleAddPluto") {
+            //add amazon:https://amazon.com,alice,"pa55,word",shopping account
+            command = "add " + secrets + "\n"; // Use the passed 'secrets' for single add
         } else {
             throw new Error("Unknown action: " + action);
         }
@@ -67,7 +70,7 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
                     }
                 }
             }
-        } else if (action == "getKeyPluto" || action === "typeKeyPluto" || action === "updateKeyPluto") { // Group common single-line responses, include update
+        } else if (action == "getKeyPluto" || action === "typeKeyPluto" || action === "updateKeyPluto" || action === "singleAddPluto") { // Group common single-line responses, include update
             // for get, type, and update commands, read until first newline
             await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for get
             while (true) {
@@ -139,8 +142,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         responseAction = "getKeyResponse";
     } else if (message.action === "bulkAddPluto") {
         responseAction = "bulkAddResponse"; // New action for bulkAdd
-    } else if (message.action === "updateKeyPluto") { // NEW: Action for update
+    } else if (message.action === "updateKeyPluto") {
         responseAction = "updateKeyResponse";
+    } else if (message.action === "singleAddPluto") {
+        responseAction = "singleAddResponse";
     } else {
         // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
         // we can simply send a success status and return.
