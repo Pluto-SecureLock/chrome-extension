@@ -50,10 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.classList.remove('active');
                 btn.querySelector('span').classList.remove('text-mindaro');
                 btn.querySelector('span').classList.add('text-gray-subtle');
-                if (btn.querySelector('svg path')) { // For SVGs with paths
-                  btn.querySelector('svg path').setAttribute('fill', 'none');
-                  btn.querySelector('svg path').setAttribute('stroke', 'currentColor');
-                }
                 btn.querySelector('svg').classList.remove('text-mindaro');
                 btn.querySelector('svg').classList.add('opacity-60');
             });
@@ -65,13 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
             button.classList.add('active');
             button.querySelector('span').classList.remove('text-gray-subtle');
             button.querySelector('span').classList.add('text-mindaro');
-            if (button.querySelector('svg path')) { // For SVGs with paths
-                button.querySelector('svg path').setAttribute('fill', 'currentColor');
-                button.querySelector('svg path').removeAttribute('stroke');
-            }
-            if (button.querySelector('svg image')) { // For SVGs with image href
-                button.querySelector('svg image').setAttribute('href', button.querySelector('svg image').getAttribute('href').replace('_inactive.png', '.png')); // Placeholder for active image
-            }
             button.querySelector('svg').classList.remove('opacity-60');
             button.querySelector('svg').classList.add('text-mindaro');
 
@@ -332,6 +321,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (listLine) {
       keys = JSON.parse(listLine.replace(/'/g, '"'));  // Update global keys
       updateKeyList(keys);
+      document.getElementById("showKeysBtn").classList.add('hidden');
     } else {
       console.error("No valid key list found in response.");
     }
@@ -399,7 +389,6 @@ searchInput.addEventListener('input', () => {
   });
 });
 
-
 /**
  * Updates the list of displayed keys in a card-based format.
  * Each key from the newKeys array will be rendered as a separate card.
@@ -412,27 +401,65 @@ function updateKeyList(newKeys) {
 
   newKeys.forEach(key => {
     const cardDiv = document.createElement('div');
-    cardDiv.className = 'bg-white p-3 rounded-md shadow-sm border border-light-gray flex items-center justify-between hover:bg-gray-50 transition-colors duration-200';
+    cardDiv.className = 'bg-white p-3 rounded-md shadow-sm border border-light-gray flex items-center justify-between hover:bg-gray-200 transition-colors duration-200';
+    cardDiv.dataset.domain = key; // Store the domain on the card
+
     cardDiv.innerHTML = `
         <div class="flex items-center">
             <div class="w-7 h-7 rounded-full bg-rio-blue flex items-center justify-center mr-3 flex-shrink-0">
-                <!-- Lock icon for security -->
-                <svg class="h-4 w-4 text-mindaro" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v2H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-4 4a4 4 0 018 0v2H6V6z" clip-rule="evenodd"></path></svg>
+                <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFF" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" d="M12 20a7.966 7.966 0 0 1-5.002-1.756l.002.001v-.683c0-1.794 1.492-3.25 3.333-3.25h3.334c1.84 0 3.333 1.456 3.333 3.25v.683A7.966 7.966 0 0 1 12 20ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10c0 5.5-4.44 9.963-9.932 10h-.138C6.438 21.962 2 17.5 2 12Zm10-5c-1.84 0-3.333 1.455-3.333 3.25S10.159 13.5 12 13.5c1.84 0 3.333-1.455 3.333-3.25S13.841 7 12 7Z" clip-rule="evenodd"/>
+                </svg>
+
             </div>
             <div>
-                <!-- Display the key as the main title -->
                 <p class="text-sm font-semibold text-eerie-black">${key}</p>
-                <!-- Using key as a placeholder for a 'username' or secondary info -->
                 <p class="text-xs text-gray-600">${key}</p>
             </div>
         </div>
-        <!-- Button to copy the key (or perform another action) -->
-        <button class="text-gray-500 hover:text-mindaro">
+        <button class="type-button text-gray-500 hover:scale-110 transition-transform duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
         </button>
     `;
     keyCardsContainer.appendChild(cardDiv);
+
+    // Event listener for the card itself (to display in current mission)
+    cardDiv.addEventListener('click', (event) => {
+        const clickedDomain = event.currentTarget.dataset.domain;
+        document.getElementById("currentSite").textContent = clickedDomain;
+        
+        // Trigger getKeyPluto to populate username/password fields for the clicked domain
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]) return;
+            chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: clickedDomain }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Message failed:", chrome.runtime.lastError.message);
+                } else {
+                    console.log("Message sent successfully, response:", response);
+                }
+            });
+        });
+    });
+
+    // Event listener for the copy button (typekey action)
+    const copyButton = cardDiv.querySelector('.type-button');
+    copyButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent the card's click event from firing
+        const domainToType = event.currentTarget.closest('[data-domain]').dataset.domain;
+        
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]) return;
+            chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToType }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Message failed:", chrome.runtime.lastError.message);
+                } else {
+                    console.log("Message sent successfully, response:", response);
+                }
+            });
+        });
+        window.close(); // Close the extension window after typing
+    });
   });
 }
