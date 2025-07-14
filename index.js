@@ -104,9 +104,6 @@ document.getElementById("getBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
       let domainToSend = document.getElementById("currentSite").textContent;
-      if (domainToSend === "N/A" || domainToSend === "No active tab" || !domainToSend) {
-        domainToSend = "gmail.com"; // Fallback to gmail.com as requested
-      }
       chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend}, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error("Message failed:", chrome.runtime.lastError.message);
@@ -255,11 +252,6 @@ document.getElementById("modifyBtn").addEventListener("click", () => {
 
         usernameField.contentEditable = "false";
         passwordField.contentEditable = "false";
-
-        // Hide actual password if it was not visible before entering edit mode
-        if (!isPasswordVisible) {
-            passwordField.textContent = "••••••••••••";
-        }
         
         // Remove visual cue
         usernameField.classList.remove("border", "border-mindaro", "rounded", "px-1");
@@ -268,6 +260,11 @@ document.getElementById("modifyBtn").addEventListener("click", () => {
 
         const newUsername = usernameField.textContent.trim();
         const newPassword = passwordField.textContent.trim();
+
+        // Hide actual password if it was not visible before entering edit mode
+        if (!isPasswordVisible) {
+            passwordField.textContent = "••••••••••••";
+        }
 
         // Send update command to device
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -364,7 +361,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
     }
     else if (message.action === "updateKeyResponse") {
-        console.log("Received updateKey response from content script:", message.data);
+
+        const rawData = message.data.trim().split("\n");
+        console.log("Received updateKey response from content script:", rawData);
         // You might want to update the UI further or just confirm success
     }
 });

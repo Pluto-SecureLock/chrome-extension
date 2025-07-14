@@ -38,7 +38,7 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
             command = "bulkadd " + secrets + "\n"; // Correctly use the passed 'secrets'
         } else if (action == "updateKeyPluto") {
             //modify example.com[username:alice_wonder,password:newP@ss,note:2FA enabled]
-            command = `update ${domain}[username:${username},password:${password}]\n`;
+            command = `update ${domain}[username:${username},password:"${password}"]\n`;
         } else if (action == "singleAddPluto") {
             //add amazon:https://amazon.com,alice,"pa55,word",shopping account
             command = "add " + secrets + "\n"; // Use the passed 'secrets' for single add
@@ -53,50 +53,81 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
         let temp = 0;
         const decoder = new TextDecoder();
         
-        // different reading logic based on command
-        if (action == "showKeysPluto") {
-            // showKeys returns multiple lines
+        // --- MODIFIED READING LOGIC STARTS HERE ---
+
+        // Helper function to read a single line or until a specific condition
+        const readUntilNewlineOrDone = async (reader) => {
+            let buffer = "";
             while (true) {
                 const { value, done } = await reader.read();
-                if (done) break;
-                if (value) {
-                    const text = decoder.decode(value);
-                    response += text;
-                    
-                    if (text.includes("\n") && temp == 0) {
-                        temp = 1;
-                    } else if(temp == 1 && text.includes("\n")) {
-                        break;
+                if (done) {
+                    return { text: buffer, done: true };
+                }
+                const text = decoder.decode(value);
+                buffer += text;
+                if (buffer.includes("\n")) {
+                    return { text: buffer, done: false };
+                }
+            }
+        };
+
+        // First, try to read and discard any "Ready to receive" messages that might come immediately
+        // after sending a command, but before the actual response.
+        // We'll give it a small timeout to allow the device to send its "ready" message first,
+        // if it's designed to do so.
+        let firstRead = await Promise.race([
+            readUntilNewlineOrDone(reader),
+            new Promise(resolve => setTimeout(() => resolve({ text: '', done: false }), 200)) // Adjust delay as needed
+        ]);
+        
+        if (firstRead.text.includes("Ready to receive commands over USB Serial")) {
+            console.log("Discarded initial 'Ready' message:", firstRead.text.trim());
+            // Now, read the actual response
+            response = (await readUntilNewlineOrDone(reader)).text;
+        } else {
+            // If the first read didn't contain "Ready", it might be the actual response or just a part of it.
+            // If it's a multi-line response (like showKeys), or the full single-line response.
+            response = firstRead.text;
+
+            // Handle multi-line responses (like showKeysPluto)
+            if (action == "showKeysPluto") {
+                let temp = 0; // Renaming temp to avoid confusion, it's a state flag
+                if (response.includes("\n")) {
+                    temp = 1; // First newline encountered
+                }
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) {
+                        const text = decoder.decode(value);
+                        response += text;
+                        if (text.includes("\n") && temp == 0) {
+                            temp = 1;
+                        } else if(temp == 1 && text.includes("\n")) {
+                            break; // Second newline, end of showKeys response
+                        }
                     }
                 }
-            }
-        } else if (action == "getKeyPluto" || action === "typeKeyPluto" || action === "updateKeyPluto" || action === "singleAddPluto") { // Group common single-line responses, include update
-            // for get, type, and update commands, read until first newline
-            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for get
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (value) {
-                    const text = decoder.decode(value);
-                    response += text;
-                    
-                    if (text.includes("\n")) {
-                        break;
+            } else if (action === "bulkAddPluto") {
+                // For bulkAdd, read until the stream is done to ensure all lines are captured.
+                let fullResponse = response; // Start with what we've already read
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) {
+                        const text = decoder.decode(value);
+                        fullResponse += text;
                     }
                 }
-            }
-        } else if (action == "bulkAddPluto") {
-            // For bulkAdd, read until the stream is done to ensure all lines are captured.
-            let fullResponse = ""; // Accumulate all chunks
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (value) {
-                    const text = decoder.decode(value);
-                    fullResponse += text;
+                response = fullResponse; // Assign the complete response
+            } else {
+                // For other single-line responses, ensure we have the full line
+                while (!response.includes("\n") && !firstRead.done) {
+                    const nextRead = await readUntilNewlineOrDone(reader);
+                    response += nextRead.text;
+                    firstRead.done = nextRead.done; // Update done status
                 }
             }
-            response = fullResponse; // Assign the complete response
         }
 
         console.log("Device response:", response.trim());
