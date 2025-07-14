@@ -7,10 +7,10 @@
   "action": {
     "default_popup": "index.html",
     "default_icon": {
-      "16": "sources/Pluto2.png",
-      "32": "sources/Pluto2.png",
-      "64": "sources/Pluto2.png",
-      "128": "sources/Pluto2.png"
+      "16": "sources/Icon_background.png",
+      "32": "sources/Icon_background.png",
+      "64": "sources/Icon_background.png",
+      "128": "sources/Icon_background.png"
     },
     "default_title": "Pluto Helper"
   },
@@ -22,10 +22,10 @@
     }],
 
 "icons": {
-    "16": "sources/Pluto2.png",
-    "32": "sources/Pluto2.png",
-    "64": "sources/Pluto2.png",
-    "128": "sources/Pluto2.png"
+    "16": "sources/Icon_background.png",
+    "32": "sources/Icon_background.png",
+    "64": "sources/Icon_background.png",
+    "128": "sources/Icon_background.png"
   },
   "permissions": [
     "activeTab",

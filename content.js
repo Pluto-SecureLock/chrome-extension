@@ -16,9 +16,11 @@ async function openSerial(){
 
 // Modify commandSerial to accept 'secrets', 'username', and 'password' for relevant commands
 async function commandSerial(port, action, domain = "", secrets = "", username = "", password = "") { // Add new parameters
+    let writer; // Declare writer outside try block to be accessible in finally
+    let reader; // Declare reader outside try block to be accessible in finally
     try {
-        const writer = port.writable.getWriter();
-        const reader = port.readable.getReader();
+        writer = port.writable.getWriter();
+        reader = port.readable.getReader();
 
         // focus input field for type commands
         if (action == "typeKeyPluto") {
@@ -32,163 +34,109 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
             command = "showkeys \n";
         } else if (action == "getKeyPluto") {
             command = "get " + domain + "\n";
-        } else if (action == "typeKeyPluto"){
+        } else if (action == "typeKeyPluto") {
             command = "type " + domain + "\n";
-        } else if (action == "bulkAddPluto") {
-            command = "bulkadd " + secrets + "\n"; // Correctly use the passed 'secrets'
-        } else if (action == "updateKeyPluto") {
-            //modify example.com[username:alice_wonder,password:newP@ss,note:2FA enabled]
-            command = `update ${domain}[username:${username},password:"${password}"]\n`;
-        } else if (action == "singleAddPluto") {
-            //add amazon:https://amazon.com,alice,"pa55,word",shopping account
-            command = "add " + secrets + "\n"; // Use the passed 'secrets' for single add
+        } else if (action === "bulkAddPluto") {
+            // For bulkAdd, the secrets string is the command itself
+            command = secrets + "\n";
+        } else if (action === "singleAddPluto") {
+            // For singleAdd, the secrets string is the command itself
+            command = "add " + secrets + "\n";
+        } else if (action === "updateKeyPluto") {
+            // New command for updating an existing key
+            // Format: update [domain]:[username],[password],[note]
+            const note = ""; // Assuming note is not part of update for now
+            command = `update ${domain}[username:${username},password:"${password}",note:${note}]\n`;
+        } else if (action === "PlutoInit") {
+            // This is just to initialize the connection
+            command = "status\n"; // Sending a simple command to confirm connection
         } else {
-            throw new Error("Unknown action: " + action);
+            console.error("Unknown action:", action);
+            return "ERROR: Unknown action";
         }
 
-        const encoder = new TextEncoder();
-        await writer.write(encoder.encode(command));
+        const data = new TextEncoder().encode(command);
+        await writer.write(data);
 
-        let response = "";
-        let temp = 0;
-        const decoder = new TextDecoder();
-
-        // Helper function to read a single line or until a specific condition
-        const readUntilNewlineOrDone = async (reader) => {
-            let buffer = "";
+        // Read response only for actions that expect one
+        if (action === "showKeysPluto" || action === "getKeyPluto" || action === "updateKeyPluto" || action === "bulkAddPluto" || action === "singleAddPluto") {
+            let receivedData = "";
             while (true) {
                 const { value, done } = await reader.read();
-                if (done) {
-                    return { text: buffer, done: true };
-                }
-                const text = decoder.decode(value);
-                buffer += text;
-                if (buffer.includes("\n")) {
-                    return { text: buffer, done: false };
+                if (done) break;
+                receivedData += new TextDecoder().decode(value);
+                if (receivedData.includes("\n")) { // Assuming each response ends with a newline
+                    break;
                 }
             }
-        };
-
-        // First, try to read and discard any "Ready to receive" messages that might come immediately
-        // after sending a command, but before the actual response.
-        // We'll give it a small timeout to allow the device to send its "ready" message first,
-        // if it's designed to do so.
-        let firstRead = await Promise.race([
-            readUntilNewlineOrDone(reader),
-            new Promise(resolve => setTimeout(() => resolve({ text: '', done: false }), 200)) // Adjust delay as needed
-        ]);
-
-        if (firstRead.text.includes("Ready to receive commands over USB Serial")) {
-            console.log("Discarded initial 'Ready' message:", firstRead.text.trim());
-            // Now, read the actual response
-            response = (await readUntilNewlineOrDone(reader)).text;
-        } else {
-            // If the first read didn't contain "Ready", it might be the actual response or just a part of it.
-            // If it's a multi-line response (like showKeys), or the full single-line response.
-            response = firstRead.text;
-
-            // Handle multi-line responses (like showKeysPluto)
-            if (action == "showKeysPluto") {
-                let temp = 0; // Renaming temp to avoid confusion, it's a state flag
-                if (response.includes("\n")) {
-                    temp = 1; // First newline encountered
-                }
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    if (value) {
-                        const text = decoder.decode(value);
-                        response += text;
-                        if (text.includes("\n") && temp == 0) {
-                            temp = 1;
-                        } else if(temp == 1 && text.includes("\n")) {
-                            break; // Second newline, end of showKeys response
-                        }
-                    }
-                }
-            } else if (action === "bulkAddPluto") {
-                // For bulkAdd, read until the stream is done to ensure all lines are captured.
-                let fullResponse = response; // Start with what we've already read
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    if (value) {
-                        const text = decoder.decode(value);
-                        fullResponse += text;
-                    }
-                }
-                response = fullResponse; // Assign the complete response
-            } else {
-                // For other single-line responses, ensure we have the full line
-                while (!response.includes("\n") && !firstRead.done) {
-                    const nextRead = await readUntilNewlineOrDone(reader);
-                    response += nextRead.text;
-                    firstRead.done = nextRead.done; // Update done status
-                }
-            }
+            return receivedData.trim();
         }
 
-        console.log("Device response:", response.trim());
-
-        // Release locks
-        writer.releaseLock();
-        reader.releaseLock();
-        return response.trim();
-
+        return "Command sent successfully"; // For commands that don't expect a response
     } catch (err) {
         console.error("Serial error:", err);
-        return "ERROR: " + err.message; // Return an error message for better feedback
+        return "ERROR: " + err.message;
+    } finally {
+        // Ensure the writer and reader are released
+        if (writer) {
+            writer.releaseLock();
+        }
+        if (reader) {
+            reader.releaseLock();
+        }
     }
 }
 
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  console.log(message);
-  if (message.action === "PlutoInit") {
-    openedPort = await openSerial();
-    sendResponse({ status: "InitReceived OK" });
-    return true;
-  } else {
-    if (!openedPort) {
-      sendResponse({ status: "Error: Device not connected." });
-      return true;
-    }
+// Listen for messages from the extension popup (index.js)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    (async () => { // Use an async IIFE to allow await inside the listener
+        if (!openedPort) {
+            openedPort = await openSerial();
+            if (!openedPort) {
+                sendResponse({ status: "ERROR: Could not open serial port." });
+                return; // Exit if port couldn't be opened
+            }
+        }
 
-    // Pass message.secrets, message.username, message.password to commandSerial
-    const result = await commandSerial(
-        openedPort, 
-        message.action, 
-        message.domain || '', 
-        message.secrets || '',
-        message.username || '', // Pass username
-        message.password || ''  // Pass password
-    );
+        // Pass message.secrets, message.username, message.password to commandSerial
+        const result = await commandSerial(
+            openedPort, 
+            message.action, 
+            message.domain || '', 
+            message.secrets || '',
+            message.username || '', // Pass username
+            message.password || ''  // Pass password
+        );
 
-    // Dynamically determine the response action based on the original message action
-    let responseAction;
-    if (message.action === "showKeysPluto") {
-        responseAction = "showKeysResponse";
-    } else if (message.action === "getKeyPluto") {
-        responseAction = "getKeyResponse";
-    } else if (message.action === "bulkAddPluto") {
-        responseAction = "bulkAddResponse"; // New action for bulkAdd
-    } else if (message.action === "updateKeyPluto") {
-        responseAction = "updateKeyResponse";
-    } else if (message.action === "singleAddPluto") {
-        responseAction = "singleAddResponse";
-    } else {
-        // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
-        // we can simply send a success status and return.
-        sendResponse({ status: message.action + " OK" });
+        // Dynamically determine the response action based on the original message action
+        let responseAction;
+        if (message.action === "showKeysPluto") {
+            responseAction = "showKeysResponse";
+        } else if (message.action === "getKeyPluto") {
+            responseAction = "getKeyResponse";
+        } else if (message.action === "bulkAddPluto") {
+            responseAction = "bulkAddResponse"; // New action for bulkAdd
+        } else if (message.action === "updateKeyPluto") {
+            responseAction = "updateKeyResponse";
+        } else if (message.action === "singleAddPluto") {
+            responseAction = "singleAddResponse";
+        } else {
+            // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
+            // we can simply send a success status and return.
+            sendResponse({ status: message.action + " OK" });
+            return true; 
+        }
+
+        // Send the response back to the extension popup (index.js)
+        chrome.runtime.sendMessage({
+          action: responseAction,
+          data: result // Send the result from commandSerial
+        });
+        sendResponse({ status: "OK", data: result }); // Send the result back to the popup
+
+        // This return true is important for sendResponse to work asynchronously
+        // It signals that you will send a response later.
         return true; 
-    }
-
-    // Send the response back to the extension popup (index.js)
-    chrome.runtime.sendMessage({
-      action: responseAction,
-      data: result
-    });
-
-    sendResponse({ status: message.action + " OK" });
-    return true;
-  }
+    })(); // End of async IIFE
+    return true; // Keep this return true for the main listener to signal async response
 });

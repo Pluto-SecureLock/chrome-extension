@@ -4,6 +4,21 @@ let isPasswordVisible = false;
 let isEditMode = false;
 let isBulkMode = true;
 
+// Helper function to handle sendMessage responses, ignoring specific errors
+function handleSendMessageResponse(response) {
+    if (chrome.runtime.lastError) {
+        // Ignore "The message port closed before a response was received." error
+        if (chrome.runtime.lastError.message === "The message port closed before a response was received.") {
+            // console.log("Ignored message port closed error."); // For debugging, you can uncomment this
+        } else {
+            console.error("Message failed:", chrome.runtime.lastError.message);
+        }
+    } else {
+        console.log("Message sent successfully, response:", response);
+    }
+}
+
+
 // Populate currentMission with the current website hostname on load
 document.addEventListener("DOMContentLoaded", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -48,9 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // Deactivate all buttons and hide all content
             tabButtons.forEach(btn => {
                 btn.classList.remove('active');
-                btn.querySelector('span').classList.remove('text-mindaro');
-                btn.querySelector('span').classList.add('text-gray-subtle');
-                btn.querySelector('svg').classList.remove('text-mindaro');
                 btn.querySelector('svg').classList.add('opacity-60');
             });
             tabContents.forEach(content => {
@@ -59,10 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Activate the clicked button and show its content
             button.classList.add('active');
-            button.querySelector('span').classList.remove('text-gray-subtle');
-            button.querySelector('span').classList.add('text-mindaro');
             button.querySelector('svg').classList.remove('opacity-60');
-            button.querySelector('svg').classList.add('text-mindaro');
 
 
             document.getElementById(`${targetTab}View`).classList.remove('hidden');
@@ -71,21 +80,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Set initial active tab (The Core)
     document.querySelector('.tab-button[data-tab="core"]').click();
+
     // Ensure credential fields are hidden on load
     document.getElementById("credentialDisplay").classList.add("hidden");
     document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
+        document.getElementById("usernameField").addEventListener("click", () => {
+        // Only trigger modify if not already in edit mode
+        if (!isEditMode) {
+            document.getElementById("modifyBtn").click();
+        }
+    });
+
+    document.getElementById("passwordField").addEventListener("click", () => {
+        // Only trigger modify if not already in edit mode
+        if (!isEditMode) {
+            document.getElementById("modifyBtn").click();
+        }
+    });
 });
 
 // Event listener for pairBtn
 document.getElementById("pairBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.log("Message failed:", chrome.runtime.lastError.message);
-                    } else {
-                        console.log("Message sent successfully, response:", response);
-    }});
+      chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, handleSendMessageResponse);
+      console.log("Pairing request sent to content script.");
     });
   });
   
@@ -93,26 +112,16 @@ document.getElementById("pairBtn").addEventListener("click", () => {
 document.getElementById("showKeysBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.log("Message failed:", chrome.runtime.lastError.message);
-                    } else {
-                        console.log("Message sent successfully, response:", response);
-    }}); 
+      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, handleSendMessageResponse); 
     });
   }); 
 
-// Event listener for getBtn
+// Event listener for getBtn (This button is now inside credentialDisplay, so it will only be visible after credentials are shown)
 document.getElementById("getBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
       let domainToSend = document.getElementById("currentSite").textContent;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend}, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Message failed:", chrome.runtime.lastError.message);
-                    } else {
-                        console.log("Message sent successfully, response:", response);
-    }});
+      chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend}, handleSendMessageResponse);
     });
   }); 
 
@@ -124,12 +133,7 @@ document.getElementById("typeBtn").addEventListener("click", () => {
       if (domainToSend === "N/A" || domainToSend === "No active tab" || !domainToSend) {
         domainToSend = "gmail.com"; // Fallback to gmail.com as requested
       }
-      chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToSend}, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Message failed:", chrome.runtime.lastError.message);
-                    } else {
-                        console.log("Message sent successfully, response:", response);
-    }});
+      chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToSend}, handleSendMessageResponse);
     });
     window.close(); //need it, otherwise the extension window is focused and the HID inputs are misinterpreted
   });
@@ -139,15 +143,9 @@ document.getElementById("sendSecretsBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
       const secretsToSend = document.getElementById("bulkSecretsTextarea").value; // Get the value
-      chrome.tabs.sendMessage(tabs[0].id, { action: "bulkAddPluto", secrets: secretsToSend }, (response) => { // Send it in the message
-                    if (chrome.runtime.lastError) {
-                        console.log("Message failed:", chrome.runtime.lastError.message);
-                    } else {
-                        console.log("Message sent successfully, response:", response);
+      chrome.tabs.sendMessage(tabs[0].id, { action: "bulkAddPluto", secrets: secretsToSend }, handleSendMessageResponse);
                         // Optionally provide feedback to the user, e.g., clear the textarea
                         document.getElementById("bulkSecretsTextarea").value = ''; // Clear textarea on success
-                    }
-    });
     });
   });
 
@@ -177,18 +175,15 @@ document.getElementById("AddCredentialBtn").addEventListener("click", () => {
     chrome.tabs.sendMessage(
       tabs[0].id,
       { action: "singleAddPluto", secrets: secretsToSend },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          console.error("Message failed:", chrome.runtime.lastError.message);
-          return;
+      (response) => { // Using a direct callback here to manage form clearing specifically
+        handleSendMessageResponse(response); // Still use the general handler for error checking
+        if (!chrome.runtime.lastError || chrome.runtime.lastError.message === "The message port closed before a response was received.") {
+            // 4 ▸ Limpia el formulario tras éxito or ignored error
+            ["singleHostField",
+             "singleUsernameField",
+             "singlePasswordField",
+             "singleNotesField"].forEach(id => document.getElementById(id).value = "");
         }
-        console.log("Credential sent:", response);
-
-        // 4 ▸ Limpia el formulario tras éxito
-        ["singleHostField",
-         "singleUsernameField",
-         "singlePasswordField",
-         "singleNotesField"].forEach(id => document.getElementById(id).value = "");
       }
     );
   });
@@ -217,6 +212,7 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
     isPasswordVisible = !isPasswordVisible;
 });
 
+// NEW: Event listener for modifyBtn
 document.getElementById("modifyBtn").addEventListener("click", () => {
     const usernameField = document.getElementById("usernameField");
     const passwordField = document.getElementById("passwordField");
@@ -254,6 +250,11 @@ document.getElementById("modifyBtn").addEventListener("click", () => {
 
         usernameField.contentEditable = "false";
         passwordField.contentEditable = "false";
+
+        // Hide actual password if it was not visible before entering edit mode
+        if (!isPasswordVisible) {
+            passwordField.textContent = "••••••••••••";
+        }
         
         // Remove visual cue
         usernameField.classList.remove("border", "border-mindaro", "rounded", "px-1");
@@ -263,11 +264,6 @@ document.getElementById("modifyBtn").addEventListener("click", () => {
         const newUsername = usernameField.textContent.trim();
         const newPassword = passwordField.textContent.trim();
 
-        // Hide actual password if it was not visible before entering edit mode
-        if (!isPasswordVisible) {
-            passwordField.textContent = "••••••••••••";
-        }
-
         // Send update command to device
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
@@ -276,15 +272,7 @@ document.getElementById("modifyBtn").addEventListener("click", () => {
                 domain: currentDomain, // The current domain
                 username: newUsername,
                 password: newPassword
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.log("Update message failed:", chrome.runtime.lastError.message);
-                } else {
-                    console.log("Update message sent successfully, response:", response);
-                    // Update currentPassword in case it was changed
-                    currentPassword = newPassword; 
-                }
-            });
+            }, handleSendMessageResponse);
         });
     }
 });
@@ -309,26 +297,25 @@ document.getElementById('modeToggleButton').addEventListener('click', function()
     isBulkMode = !isBulkMode; // Toggle the mode
 });
 
+// NEW: Event listener for currentMissionClickableArea
 document.getElementById("currentMissionClickableArea").addEventListener("click", (event) => {
-    // Only trigger if not in edit mode and the click wasn't on the modifyBtn
-    if (!isEditMode && !event.target.closest('#modifyBtn')) {
+    // Only trigger if not in edit mode, not clicking modifyBtn/typeBtn, AND credentials are not yet shown
+    if (!isEditMode && !event.target.closest('#modifyBtn') && !event.target.closest('#typeBtn') && document.getElementById("credentialDisplay").classList.contains("hidden")) {
         const domainToSend = document.getElementById("currentSite").textContent;
         if (domainToSend && domainToSend !== "Loading..." && domainToSend !== "N/A" && domainToSend !== "No active tab") {
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (!tabs[0]) return;
-                chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Message failed:", chrome.runtime.lastError.message);
-                    } else {
-                        console.log("Message sent successfully, response:", response);
-                    }
-                });
+                chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend }, handleSendMessageResponse);
             });
         } else {
             console.log("Cannot retrieve credentials: Invalid domain or domain not loaded.");
         }
+    } else if (!document.getElementById("credentialDisplay").classList.contains("hidden")) {
+        // Optionally, add a log here if you want to know when a click is prevented
+        console.log("Click on current-mission-card prevented because credentials are already displayed.");
     }
 });
+
 
 // Consolidated chrome.runtime.onMessage.addListener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -358,7 +345,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Expected format: "domain: {'username': '...', 'password': '...'}"
         const colonIndex = dataString.indexOf(':');
         if (colonIndex !== -1) {
-            let jsonPart = dataString.substring(colonIndex + 1).trim();
+            let jsonPart = dataString.substring(colonIndex + 1).trim(); // This is the original jsonPart with potential trailing chars
+            
+            // --- START OF NEW CODE FOR JSON PARSING FIX ---
+            const firstBraceIndex = jsonPart.indexOf('{');
+            const lastBraceIndex = jsonPart.lastIndexOf('}');
+
+            if (firstBraceIndex !== -1 && lastBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
+                // Extract only the part that looks like a complete JSON object
+                jsonPart = jsonPart.substring(firstBraceIndex, lastBraceIndex + 1);
+            } else {
+                // If a valid JSON object structure isn't found, log an error and
+                // allow the JSON.parse to fail gracefully in the catch block.
+                console.error("No complete JSON object structure found in the received data part:", jsonPart);
+                // Keep jsonPart as is, so the next JSON.parse will likely throw an error which is caught.
+            }
+
             try {
                 // Replace single quotes with double quotes for valid JSON parsing
                 jsonPart = jsonPart.replace(/'/g, '"');
@@ -368,7 +370,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 // and transforms it to "key": "value"
                 jsonPart = jsonPart.replace(/: ""([^\"]*)\""/g, ': "$1"');
 
-                const keyData = JSON.parse(jsonPart);
+                const keyData = JSON.parse(jsonPart); // This is line 350.
 
                 // Populate fields
                 document.getElementById("usernameField").textContent = keyData.username || "N/A";
@@ -382,16 +384,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 document.getElementById("passwordField").textContent = "Error";
             }
         } else {
-            console.error("getKeyResponse data format invalid:", dataString);
+            console.error("getKeyResponse data format invalid: No colon found separating domain and JSON.", dataString);
             document.getElementById("usernameField").textContent = "N/A";
             document.getElementById("passwordField").textContent = "N/A";
         }
     }
-    else if (message.action === "updateKeyResponse") {
-
+    else if (message.action === "updateKeyResponse") { 
         const rawData = message.data.trim().split("\n");
         console.log("Received updateKey response from content script:", rawData);
         // You might want to update the UI further or just confirm success
+    }
+    else {``
+        console.warn("Received action from content script:", message.action);
     }
 });
 
@@ -459,13 +463,7 @@ function updateKeyList(newKeys) {
         // Trigger getKeyPluto to populate username/password fields for the clicked domain
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
-            chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: clickedDomain }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Message failed:", chrome.runtime.lastError.message);
-                } else {
-                    console.log("Message sent successfully, response:", response);
-                }
-            });
+            chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: clickedDomain }, handleSendMessageResponse);
         });
     });
 
@@ -477,13 +475,7 @@ function updateKeyList(newKeys) {
         
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
-            chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToType }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Message failed:", chrome.runtime.lastError.message);
-                } else {
-                    console.log("Message sent successfully, response:", response);
-                }
-            });
+            chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToType }, handleSendMessageResponse);
         });
         window.close(); // Close the extension window after typing
     });
