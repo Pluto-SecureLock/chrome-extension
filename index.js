@@ -71,6 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Set initial active tab (The Core)
     document.querySelector('.tab-button[data-tab="core"]').click();
+    // Ensure credential fields are hidden on load
+    document.getElementById("credentialDisplay").classList.add("hidden");
+    document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
 });
 
 // Event listener for pairBtn
@@ -214,7 +217,6 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
     isPasswordVisible = !isPasswordVisible;
 });
 
-// NEW: Event listener for modifyBtn
 document.getElementById("modifyBtn").addEventListener("click", () => {
     const usernameField = document.getElementById("usernameField");
     const passwordField = document.getElementById("passwordField");
@@ -307,6 +309,27 @@ document.getElementById('modeToggleButton').addEventListener('click', function()
     isBulkMode = !isBulkMode; // Toggle the mode
 });
 
+document.getElementById("currentMissionClickableArea").addEventListener("click", (event) => {
+    // Only trigger if not in edit mode and the click wasn't on the modifyBtn
+    if (!isEditMode && !event.target.closest('#modifyBtn')) {
+        const domainToSend = document.getElementById("currentSite").textContent;
+        if (domainToSend && domainToSend !== "Loading..." && domainToSend !== "N/A" && domainToSend !== "No active tab") {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (!tabs[0]) return;
+                chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Message failed:", chrome.runtime.lastError.message);
+                    } else {
+                        console.log("Message sent successfully, response:", response);
+                    }
+                });
+            });
+        } else {
+            console.log("Cannot retrieve credentials: Invalid domain or domain not loaded.");
+        }
+    }
+});
+
 // Consolidated chrome.runtime.onMessage.addListener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "showKeysResponse") {
@@ -326,6 +349,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Received bulkAdd response from content script:", message.data);
   } else if (message.action === "getKeyResponse") { // New action to handle getBtn response
         console.log("Received getKey data from content script:", message.data);
+
+        // Hide the "Click to retrieve" message and show the credential fields
+        document.getElementById("clickToRetrieveMessage").classList.add("hidden");
+        document.getElementById("credentialDisplay").classList.remove("hidden");
 
         const dataString = message.data.trim();
         // Expected format: "domain: {'username': '...', 'password': '...'}"

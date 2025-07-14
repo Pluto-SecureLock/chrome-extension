@@ -29,6 +29,7 @@
     --text-lg--line-height: calc(1.75 / 1.125);
     --text-xl: 1.25rem;
     --text-xl--line-height: calc(1.75 / 1.25);
+    --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
@@ -233,6 +234,9 @@
   }
   .mt-2 {
     margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
   }
   .mr-1 {
     margin-right: calc(var(--spacing) * 1);
@@ -445,6 +449,9 @@
   }
   .pb-4 {
     padding-bottom: calc(var(--spacing) * 4);
+  }
+  .text-center {
+    text-align: center;
   }
   .text-left {
     text-align: left;
@@ -672,8 +679,31 @@
     }
   }
 }
+@layer base {
+  @font-face {
+    font-family: 'Creato Display';
+    src: url('./sources/fonts/creato_display/CreatoDisplay-Medium.otf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Cocogoose';
+    src: url('./sources/fonts/cocogoose/CocogoosePro-trial.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Cocogoose';
+    src: url('./sources/fonts/cocogoose/CocogooseProLight-trial.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+}
 .current-mission-card {
-  background: linear-gradient(135deg, #054FF0 0%, #DCFC73 100%);
+  background: linear-gradient(135deg, #01042F 0%, #054FF0 100%);
   color: white;
   position: relative;
 }

@@ -52,8 +52,6 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
         let response = "";
         let temp = 0;
         const decoder = new TextDecoder();
-        
-        // --- MODIFIED READING LOGIC STARTS HERE ---
 
         // Helper function to read a single line or until a specific condition
         const readUntilNewlineOrDone = async (reader) => {
@@ -79,7 +77,7 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
             readUntilNewlineOrDone(reader),
             new Promise(resolve => setTimeout(() => resolve({ text: '', done: false }), 200)) // Adjust delay as needed
         ]);
-        
+
         if (firstRead.text.includes("Ready to receive commands over USB Serial")) {
             console.log("Discarded initial 'Ready' message:", firstRead.text.trim());
             // Now, read the actual response
