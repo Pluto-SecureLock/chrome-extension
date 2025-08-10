@@ -3,6 +3,7 @@ let currentPassword = "";
 let isPasswordVisible = false;
 let isEditMode = false;
 let isBulkMode = true;
+let isMenuOpen = false;
 
 // Helper function to handle sendMessage responses, ignoring specific errors
 function handleSendMessageResponse(response) {
@@ -84,19 +85,61 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ensure credential fields are hidden on load
     document.getElementById("credentialDisplay").classList.add("hidden");
     document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
-        document.getElementById("usernameField").addEventListener("click", () => {
-        // Only trigger modify if not already in edit mode
-        if (!isEditMode) {
-            document.getElementById("modifyBtn").click();
-        }
-    });
 
-    document.getElementById("passwordField").addEventListener("click", () => {
-        // Only trigger modify if not already in edit mode
-        if (!isEditMode) {
-            document.getElementById("modifyBtn").click();
-        }
-    });
+    // document.getElementById("usernameField").addEventListener("click", () => {
+    //     // Only trigger modify if not already in edit mode
+    //     if (!isEditMode) {
+    //         document.getElementById("modifyBtn").click();
+    //     }
+    // });
+
+    // document.getElementById("passwordField").addEventListener("click", () => {
+    //     // Only trigger modify if not already in edit mode
+    //     if (!isEditMode) {
+    //         document.getElementById("modifyBtn").click();
+    //     }
+    // });
+});
+
+const menuBtn = document.getElementById('menuBtn');
+const menuOptionsCard = document.getElementById('menuOptionsCard');
+menuBtn.addEventListener('click', (event) => {
+    event.stopPropagation(); // Prevent document click from closing it immediately
+    if (isEditMode) { // If already in edit mode (upload icon visible)
+        // This means the user clicked the upload/save icon
+        exitEditModeAndSave();
+    } else if (!isMenuOpen) { // If menu is closed, open it
+        menuOptionsCard.classList.remove('hidden');
+        isMenuOpen = true;
+    } else { // If menu is open, close it (if clicking menu button again)
+        menuOptionsCard.classList.add('hidden');
+        isMenuOpen = false;
+    }
+});
+
+const menuIcon = document.getElementById('menuIcon');
+const uploadIcon = document.getElementById('uploadIcon');
+const modifyOptionBtn = document.getElementById('modifyOptionBtn');
+modifyOptionBtn.addEventListener('click', () => {
+    menuOptionsCard.classList.add('hidden'); // Hide the options card
+    isMenuOpen = false;
+    enterEditMode(); // Enter edit mode
+});
+
+const deleteIcon = document.getElementById('deleteIcon');
+const deleteOptionBtn = document.getElementById('deleteOptionBtn'); 
+deleteOptionBtn.addEventListener('click', () => {
+    menuOptionsCard.classList.add('hidden'); // Hide the options card
+    isMenuOpen = false;
+    confirmAndDelete(); // Handle delete action
+});
+
+// Close menu if clicked outside
+document.addEventListener('click', (event) => {
+    if (isMenuOpen && !menuOptionsCard.contains(event.target) && !menuBtn.contains(event.target)) {
+        menuOptionsCard.classList.add('hidden');
+        isMenuOpen = false;
+    }
 });
 
 // Event listener for pairBtn
@@ -212,70 +255,70 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
     isPasswordVisible = !isPasswordVisible;
 });
 
-// NEW: Event listener for modifyBtn
-document.getElementById("modifyBtn").addEventListener("click", () => {
-    const usernameField = document.getElementById("usernameField");
-    const passwordField = document.getElementById("passwordField");
-    const modifyIcon = document.getElementById("modifyIcon");
-    const uploadIcon = document.getElementById("uploadIcon");
-    const currentDomain = document.getElementById("currentSite").textContent;
+// // NEW: Event listener for modifyBtn
+// document.getElementById("modifyBtn").addEventListener("click", () => {
+//     const usernameField = document.getElementById("usernameField");
+//     const passwordField = document.getElementById("passwordField");
+//     const modifyIcon = document.getElementById("modifyIcon");
+//     const uploadIcon = document.getElementById("uploadIcon");
+//     const currentDomain = document.getElementById("currentSite").textContent;
 
-    if (!isEditMode) {
-        // Enter Edit Mode
-        isEditMode = true;
-        modifyIcon.classList.add("hidden");
-        uploadIcon.classList.remove("hidden");
+//     if (!isEditMode) {
+//         // Enter Edit Mode
+//         isEditMode = true;
+//         modifyIcon.classList.add("hidden");
+//         uploadIcon.classList.remove("hidden");
 
-        usernameField.contentEditable = "true";
-        passwordField.contentEditable = "true";
+//         usernameField.contentEditable = "true";
+//         passwordField.contentEditable = "true";
         
-        // Show actual password for editing
-        if (!isPasswordVisible) {
-            passwordField.textContent = currentPassword;
-            // Optionally, toggle the viewPasswordBtn icon to 'open eye' if it's not already
-        }
+//         // Show actual password for editing
+//         if (!isPasswordVisible) {
+//             passwordField.textContent = currentPassword;
+//             // Optionally, toggle the viewPasswordBtn icon to 'open eye' if it's not already
+//         }
         
-        // Add a visual cue for editable fields TODO: looks bad, fix it
-        usernameField.classList.add("border", "border-mindaro", "rounded", "px-1");
-        passwordField.classList.add("border", "border-mindaro", "rounded", "px-1");
+//         // Add a visual cue for editable fields TODO: looks bad, fix it
+//         usernameField.classList.add("border", "border-mindaro", "rounded", "px-1");
+//         passwordField.classList.add("border", "border-mindaro", "rounded", "px-1");
 
-        // Focus on username field
-        usernameField.focus();
+//         // Focus on username field
+//         usernameField.focus();
 
-    } else {
-        // Exit Edit Mode and Save Changes
-        isEditMode = false;
-        modifyIcon.classList.remove("hidden");
-        uploadIcon.classList.add("hidden");
+//     } else {
+//         // Exit Edit Mode and Save Changes
+//         isEditMode = false;
+//         modifyIcon.classList.remove("hidden");
+//         uploadIcon.classList.add("hidden");
 
-        usernameField.contentEditable = "false";
-        passwordField.contentEditable = "false";
+//         usernameField.contentEditable = "false";
+//         passwordField.contentEditable = "false";
 
-        // Hide actual password if it was not visible before entering edit mode
-        if (!isPasswordVisible) {
-            passwordField.textContent = "••••••••••••";
-        }
+//         // Hide actual password if it was not visible before entering edit mode
+//         if (!isPasswordVisible) {
+//             passwordField.textContent = "••••••••••••";
+//         }
         
-        // Remove visual cue
-        usernameField.classList.remove("border", "border-mindaro", "rounded", "px-1");
-        passwordField.classList.remove("border", "border-mindaro", "rounded", "px-1");
+//         // Remove visual cue
+//         usernameField.classList.remove("border", "border-mindaro", "rounded", "px-1");
+//         passwordField.classList.remove("border", "border-mindaro", "rounded", "px-1");
 
 
-        const newUsername = usernameField.textContent.trim();
-        const newPassword = passwordField.textContent.trim();
+//         const newUsername = usernameField.textContent.trim();
+//         const newPassword = passwordField.textContent.trim();
 
-        // Send update command to device
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]) return;
-            chrome.tabs.sendMessage(tabs[0].id, { 
-                action: "updateKeyPluto", 
-                domain: currentDomain, // The current domain
-                username: newUsername,
-                password: newPassword
-            }, handleSendMessageResponse);
-        });
-    }
-});
+//         // Send update command to device
+//         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//             if (!tabs[0]) return;
+//             chrome.tabs.sendMessage(tabs[0].id, { 
+//                 action: "updateKeyPluto", 
+//                 domain: currentDomain, // The current domain
+//                 username: newUsername,
+//                 password: newPassword
+//             }, handleSendMessageResponse);
+//         });
+//     }
+// });
 
 // Event listener for openWindow
 document.getElementById('modeToggleButton').addEventListener('click', function() {
@@ -480,4 +523,86 @@ function updateKeyList(newKeys) {
         window.close(); // Close the extension window after typing
     });
   });
+}
+
+function enterEditMode() {
+    isEditMode = true;
+    menuIcon.classList.add("hidden");
+    deleteIcon.classList.add("hidden"); // Ensure delete icon is hidden
+    uploadIcon.classList.remove("hidden"); // Show upload icon
+
+    const usernameField = document.getElementById("usernameField");
+    const passwordField = document.getElementById("passwordField");
+
+    usernameField.contentEditable = "true";
+    passwordField.contentEditable = "true";
+
+    // Show actual password for editing
+    if (!isPasswordVisible) {
+        passwordField.textContent = currentPassword;
+    }
+
+    usernameField.classList.add("border", "border-mindaro", "rounded", "px-1");
+    passwordField.classList.add("border", "border-mindaro", "rounded", "px-1");
+
+    usernameField.focus();
+}
+
+function exitEditModeAndSave() {
+    isEditMode = false;
+    menuIcon.classList.remove("hidden");
+    uploadIcon.classList.add("hidden");
+    deleteIcon.classList.add("hidden"); // Ensure delete icon is hidden after saving
+
+    const usernameField = document.getElementById("usernameField");
+    const passwordField = document.getElementById("passwordField");
+    const currentDomain = document.getElementById("currentSite").textContent;
+
+    usernameField.contentEditable = "false";
+    passwordField.contentEditable = "false";
+
+    usernameField.classList.remove("border", "border-mindaro", "rounded", "px-1");
+    passwordField.classList.remove("border", "border-mindaro", "rounded", "px-1");
+
+    const newUsername = usernameField.textContent.trim();
+    const newPassword = passwordField.textContent.trim();
+
+    if (!isPasswordVisible) {
+        passwordField.textContent = "••••••••••••";
+    }
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (!tabs[0]) return;
+        chrome.tabs.sendMessage(tabs[0].id, {
+            action: "updateKeyPluto",
+            domain: currentDomain,
+            username: newUsername,
+            password: newPassword
+        }, handleSendMessageResponse);
+    });
+}
+
+function confirmAndDelete() {
+    const currentDomain = document.getElementById("currentSite").textContent;
+    if (confirm(`Are you sure you want to delete credentials for ${currentDomain}?`)) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]) return;
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: "deleteKeyPluto", // NEW action for content script
+                domain: currentDomain
+            }, (response) => {
+                handleSendMessageResponse(response);
+                // After deletion, clear the displayed credentials
+                document.getElementById("usernameField").textContent = "N/A";
+                document.getElementById("passwordField").textContent = "••••••••••••";
+                currentPassword = "";
+                document.getElementById("credentialDisplay").classList.add("hidden");
+                document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
+                // Optionally, reset the icon to menuIcon after deletion.
+                menuIcon.classList.remove("hidden");
+                uploadIcon.classList.add("hidden");
+                deleteIcon.classList.add("hidden");
+            });
+        });
+    }
 }
