@@ -85,20 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ensure credential fields are hidden on load
     document.getElementById("credentialDisplay").classList.add("hidden");
     document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
-
-    // document.getElementById("usernameField").addEventListener("click", () => {
-    //     // Only trigger modify if not already in edit mode
-    //     if (!isEditMode) {
-    //         document.getElementById("modifyBtn").click();
-    //     }
-    // });
-
-    // document.getElementById("passwordField").addEventListener("click", () => {
-    //     // Only trigger modify if not already in edit mode
-    //     if (!isEditMode) {
-    //         document.getElementById("modifyBtn").click();
-    //     }
-    // });
 });
 
 const menuBtn = document.getElementById('menuBtn');
@@ -254,71 +240,6 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
     }
     isPasswordVisible = !isPasswordVisible;
 });
-
-// // NEW: Event listener for modifyBtn
-// document.getElementById("modifyBtn").addEventListener("click", () => {
-//     const usernameField = document.getElementById("usernameField");
-//     const passwordField = document.getElementById("passwordField");
-//     const modifyIcon = document.getElementById("modifyIcon");
-//     const uploadIcon = document.getElementById("uploadIcon");
-//     const currentDomain = document.getElementById("currentSite").textContent;
-
-//     if (!isEditMode) {
-//         // Enter Edit Mode
-//         isEditMode = true;
-//         modifyIcon.classList.add("hidden");
-//         uploadIcon.classList.remove("hidden");
-
-//         usernameField.contentEditable = "true";
-//         passwordField.contentEditable = "true";
-        
-//         // Show actual password for editing
-//         if (!isPasswordVisible) {
-//             passwordField.textContent = currentPassword;
-//             // Optionally, toggle the viewPasswordBtn icon to 'open eye' if it's not already
-//         }
-        
-//         // Add a visual cue for editable fields TODO: looks bad, fix it
-//         usernameField.classList.add("border", "border-mindaro", "rounded", "px-1");
-//         passwordField.classList.add("border", "border-mindaro", "rounded", "px-1");
-
-//         // Focus on username field
-//         usernameField.focus();
-
-//     } else {
-//         // Exit Edit Mode and Save Changes
-//         isEditMode = false;
-//         modifyIcon.classList.remove("hidden");
-//         uploadIcon.classList.add("hidden");
-
-//         usernameField.contentEditable = "false";
-//         passwordField.contentEditable = "false";
-
-//         // Hide actual password if it was not visible before entering edit mode
-//         if (!isPasswordVisible) {
-//             passwordField.textContent = "••••••••••••";
-//         }
-        
-//         // Remove visual cue
-//         usernameField.classList.remove("border", "border-mindaro", "rounded", "px-1");
-//         passwordField.classList.remove("border", "border-mindaro", "rounded", "px-1");
-
-
-//         const newUsername = usernameField.textContent.trim();
-//         const newPassword = passwordField.textContent.trim();
-
-//         // Send update command to device
-//         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//             if (!tabs[0]) return;
-//             chrome.tabs.sendMessage(tabs[0].id, { 
-//                 action: "updateKeyPluto", 
-//                 domain: currentDomain, // The current domain
-//                 username: newUsername,
-//                 password: newPassword
-//             }, handleSendMessageResponse);
-//         });
-//     }
-// });
 
 // Event listener for openWindow
 document.getElementById('modeToggleButton').addEventListener('click', function() {
