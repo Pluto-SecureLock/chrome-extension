@@ -50,8 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const singleAddIcon = document.getElementById('singleAddIcon');
 
     // Initial state: Bulk Add is active, so bulkAddIcon should be hidden and singleAddIcon visible
-    bulkAddIcon.classList.add('hidden');
-    singleAddIcon.classList.remove('hidden');
+    bulkAddIcon.classList.remove('hidden');
+    singleAddIcon.classList.add('hidden');
 
     // Initialize tab visibility
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -113,7 +113,7 @@ modifyOptionBtn.addEventListener('click', () => {
 });
 
 const deleteIcon = document.getElementById('deleteIcon');
-const deleteOptionBtn = document.getElementById('deleteOptionBtn'); 
+const deleteOptionBtn = document.getElementById('deleteOptionBtn');
 deleteOptionBtn.addEventListener('click', () => {
     menuOptionsCard.classList.add('hidden'); // Hide the options card
     isMenuOpen = false;
@@ -172,6 +172,7 @@ document.getElementById("sendSecretsBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
       const secretsToSend = document.getElementById("bulkSecretsTextarea").value; // Get the value
+      console.log("Bulk secrets to send:", secretsToSend); // Log the value for debugging
       chrome.tabs.sendMessage(tabs[0].id, { action: "bulkAddPluto", secrets: secretsToSend }, handleSendMessageResponse);
                         // Optionally provide feedback to the user, e.g., clear the textarea
                         document.getElementById("bulkSecretsTextarea").value = ''; // Clear textarea on success
@@ -187,8 +188,8 @@ document.getElementById("AddCredentialBtn").addEventListener("click", () => {
   const note     = document.getElementById("singleNotesField").value.trim();
 
   // (opcional) Validación rápida
-  if (!host || !username || !password) {
-    alert("Host, Username y Password son obligatorios");
+  if (!host || !password) {
+    alert("Host & Password are mandatory");
     return;
   }
 
@@ -244,19 +245,20 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
 // Event listener for openWindow
 document.getElementById('modeToggleButton').addEventListener('click', function() {
     if (isBulkMode) {
-        // Switch to Single Add mode
-        bulkAddContainer.classList.add('hidden');
-        singleAddContainer.classList.remove('hidden');
-        
-        bulkAddIcon.classList.remove('hidden'); // Show bulk icon
-        singleAddIcon.classList.add('hidden'); // Hide single icon
-    } else {
         // Switch to Bulk Add mode
-        singleAddContainer.classList.add('hidden');
         bulkAddContainer.classList.remove('hidden');
+        singleAddContainer.classList.add('hidden');
 
-        singleAddIcon.classList.remove('hidden'); // Hide bulk icon
-        bulkAddIcon.classList.add('hidden'); // Show single icon
+        //Show SingleAdd Icon
+        bulkAddIcon.classList.add('hidden'); // Hide bulk icon
+        singleAddIcon.classList.remove('hidden'); // Show single icon
+    } else {
+        // Switch to Single Add mode
+        singleAddContainer.classList.remove('hidden');
+        bulkAddContainer.classList.add('hidden');
+
+        singleAddIcon.classList.add('hidden'); // Hide single icon
+        bulkAddIcon.classList.remove('hidden'); // Show bulk icon
     }
     isBulkMode = !isBulkMode; // Toggle the mode
 });
@@ -297,7 +299,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.error("No valid key list found in response.");
     }
   } else if (message.action === "bulkAddResponse") { // New action to handle bulkAdd response
-    console.log("Received bulkAdd response from content script:", message.data);
+        const rawData = message.data.trim().split("\n");
+        console.log("Received Bulkadd response from content script:", rawData);
   } else if (message.action === "getKeyResponse") { // New action to handle getBtn response
         console.log("Received getKey data from content script:", message.data);
 

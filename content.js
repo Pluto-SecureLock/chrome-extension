@@ -37,13 +37,12 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
         } else if (action == "typeKeyPluto") {
             command = "type " + domain + "\n";
         } else if (action === "bulkAddPluto") {
-            // For bulkAdd, the secrets string is the command itself
-            command = secrets + "\n";
+            command = "bulkadd " + secrets + "\n";
         } else if (action === "singleAddPluto") {
-            // For singleAdd, the secrets string is the command itself
             command = "add " + secrets + "\n";
+        } else if (action === "deleteKeyPluto") {
+            command = "delete " + domain + "\n";
         } else if (action === "updateKeyPluto") {
-            // New command for updating an existing key
             // Format: update [domain]:[username],[password],[note]
             const note = ""; // Assuming note is not part of update for now
             command = `update ${domain}[username:${username},password:"${password}",note:${note}]\n`;
@@ -59,7 +58,7 @@ async function commandSerial(port, action, domain = "", secrets = "", username =
         await writer.write(data);
 
         // Read response only for actions that expect one
-        if (action === "showKeysPluto" || action === "getKeyPluto" || action === "updateKeyPluto" || action === "bulkAddPluto" || action === "singleAddPluto") {
+        if (action === "showKeysPluto" || action === "getKeyPluto" || action === "updateKeyPluto" || action === "bulkAddPluto" || action === "singleAddPluto" || action === "deleteKeyPluto") {
             let receivedData = "";
             while (true) {
                 const { value, done } = await reader.read();
@@ -120,6 +119,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             responseAction = "updateKeyResponse";
         } else if (message.action === "singleAddPluto") {
             responseAction = "singleAddResponse";
+        } else if (message.action === "deleteKeyPluto") {
+            responseAction = "deleteKeyResponse";
         } else {
             // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
             // we can simply send a success status and return.
