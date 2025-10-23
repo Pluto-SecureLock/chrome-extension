@@ -196,7 +196,7 @@ document.getElementById("AddCredentialBtn").addEventListener("click", () => {
   // 2 ▸ Armar el string en el mismo formato que espera Pluto:
   //     modify example.com[username:...,password:...,note:...]
   const secretsToSend =
-    `${host}:${host},${username},${password},${note}`;
+    `${host}:${host},${username},"${password}","${note}"`;
 
   // 3 ▸ Enviar al content-script
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
