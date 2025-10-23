@@ -1,12 +1,20 @@
 @import "tailwindcss";
 
 .current-mission-card {
-    background: linear-gradient(135deg, #054FF0 0%, #DCFC73 100%);
-    /* ... other styles ... */
+    background: linear-gradient(135deg,#01042F 0%, #054FF0 100%);
+    color: white;
+    position: relative;
 }
 
-body{
-  font-family:Helvetica;
+body {
+    width: 360px;
+    min-height: 480px;
+    font-family: 'Inter', sans-serif;
+    background-color: white;
+    color: #1C1C1C;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 @layer components{
@@ -14,14 +22,122 @@ body{
     @apply w-[80px] h-[40px] bg-blue-500 hover:bg-blue-600 hover:cursor-pointer text-amber-50 flex justify-center items-center rounded-md text-center
   }
 }
-
-@theme {
-  --color-rio-blue: #054FF0;
-  --color-mindaro-green: #DCFC73;
-  --color-silver-pluto: #C9C9C9;
-  --color-eerie-black: #1C1C1C;
+.text-rio-blue {
+    color: #054FF0;
+}
+.bg-rio-blue {
+    background-color: #054FF0;
+}
+.bg-mindaro {
+    background-color: #DCFC73;
+}
+.text-eerie-black {
+    color: #1C1C1C;
+}
+.text-gray-subtle {
+    color: #6B7280;
+}
+.border-light-gray {
+    border-color: #E5E7EB;
+}
+.bg-light-gray {
+    background-color: #F3F4F6;
+}
+.shadow-dynamic {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+.shadow-glow-mindaro {
+    box-shadow: 0 0 15px rgba(220, 252, 115, 0.6);
+}
+input:focus {
+    outline: none;
+    border-color: #DCFC73;
+    box-shadow: 0 0 0 2px rgba(220, 252, 115, 0.5);
+}
+.tab-button.active {
+    border-bottom: 3px solid #DCFC73;
+    color: #DCFC73;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: white;
+}
+::-webkit-scrollbar-thumb {
+    background: #054FF0;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #DCFC73;
+}
+.current-mission-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1);
+    z-index: 1;
+}
+.current-mission-content {
+    position: relative;
+    z-index: 2;
+}
+.current-mission-card:hover .current-mission-content {
+    transform: translateY(-5px);
+    transition: transform 0.2s ease-in-out;
+}
+.suggestions-list {
+    max-height: 120px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+.suggestions-list li {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #F3F4F6;
+}
+.suggestions-list li:hover {
+    background-color: #F3F4F6;
+}
+.suggestions-list li:last-child {
+    border-bottom: none;
+}
+.search-container {
+    position: relative;
+}
+.hidden {
+    display: none !important;
+}
+.add-svg-button-icon {
+  background-color: #007bff; /* Blue */
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; /* Allows icon and text to sit side-by-side */
+  align-items: center; /* Vertically aligns icon and text */
+  gap: 8px; /* Space between icon and text */
+  transition: background-color 0.3s ease;
 }
 
-/* .hidden{
-  display: none;
-} */
+.add-svg-button-icon:hover {
+  background-color: #0056b3;
+}
+
+.add-svg-button-icon svg {
+  vertical-align: middle; /* Ensures proper alignment if not using flexbox */
+}
