@@ -91,7 +91,7 @@ body.classList.add("h-[600px]", "w-[400px]");
 });
 
   }
-});
+});  //NEEDS TO BE CHANGED
 
 
 document.getElementById("pairBtn").addEventListener("click", () => {
