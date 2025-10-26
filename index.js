@@ -101,10 +101,6 @@ menuBtn.addEventListener('click', (event) => {
         menuOptionsCard.classList.add('hidden');
         isMenuOpen = false;
     }
-});
-
-
-  }
 });  //NEEDS TO BE CHANGED
 
 const menuIcon = document.getElementById('menuIcon');
