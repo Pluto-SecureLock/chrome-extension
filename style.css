@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 .current-mission-card {
-    background: linear-gradient(135deg,#01042F 0%, #054FF0 100%);
+    background: linear-gradient(135deg,#054FF0 0%, #DCFC73 100%);
     color: white;
     position: relative;
 }

@@ -43,9 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const toggleAddModeBtn = document.getElementById('toggleAddModeBtn');
-    const bulkAddContainer = document.getElementById('bulkAddContainer');
-    const singleAddContainer = document.getElementById('singleAddContainer');
     const bulkAddIcon = document.getElementById('bulkAddIcon');
     const singleAddIcon = document.getElementById('singleAddIcon');
 
@@ -242,7 +239,7 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
     isPasswordVisible = !isPasswordVisible;
 });
 
-// Event listener for openWindow
+// Event listener for Add View
 document.getElementById('modeToggleButton').addEventListener('click', function() {
     if (isBulkMode) {
         // Switch to Bulk Add mode
