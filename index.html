@@ -11,14 +11,22 @@
 <body class="p-4">
     <div class="flex items-center justify-between pb-4 border-b border-light-gray mb-4">
         <div class="flex items-center">
-            <img src="./sources/Asset 3.svg" alt="Pluto Logo" class="h-8 mr-2">
+            <img id="plutoLogo" src="./sources/Asset 3.svg" alt="Pluto Logo" class="h-8 mr-2">
         </div>
         <div class="flex items-center space-x-3">
-            <button id="DarkMode" class="p-2 rounded-full bg-mindaro shadow-lg hover:scale-110 transition-transform duration-300 focus:outline-none">
-                <svg class="w-6 h-6 text-eerie-black dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 0 1-.5-17.986V3c-.354.966-.5 1.911-.5 3a9 9 0 0 0 9 9c.239 0 .254.018.488 0A9.004 9.004 0 0 1 12 21Z"/>
+            <button id="DarkMode" 
+                class="p-2 rounded-full bg-mindaro shadow-lg hover:scale-110 transition-transform duration-300 focus:outline-none">
+                <!-- Sun icon (for Light Mode) -->
+                <svg id="sunIcon" class="w-6 h-6 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4V2m0 20v-2m8-8h2M2 12h2m14.364 7.364l1.414 1.414M4.222 4.222l1.414 1.414m0 12.728l-1.414 1.414M19.778 4.222l-1.414 1.414M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+
+                <!-- Moon icon (for Dark Mode) -->
+                <svg id="moonIcon" class="w-6 h-6 text-eerie-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 0 1-.5-17.986V3c-.354.966-.5 1.911-.5 3a9 9 0 0 0 9 9c.239 0 .254.018.488 0A9.004 9.004 0 0 1 12 21Z"/>
                 </svg>
             </button>
+
             <button id="openWindow" class="text-eerie-black opacity-75 hover:opacity-100 transition-opacity hover:scale-105 transition-transform duration-200 focus:outline-none" title="Open in Standalone Window">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
@@ -90,39 +98,39 @@
             </div>
         </div>
 
-    <div class="grid grid-cols-3 gap-2 mb-4">
-        <div class="col-span-2 bg-light-gray p-3 rounded-lg shadow-sm search-container">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-rio-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input type="text" id="searchInput" placeholder="Intel Search..." class="flex-1 bg-transparent text-eerie-black font-semibold focus:outline-none">
+        <div class="grid grid-cols-3 gap-2 mb-4">
+            <div class="col-span-2 bg-light-gray p-3 rounded-lg shadow-sm search-container">
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-rio-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Intel Search..." class="flex-1 bg-transparent text-eerie-black font-semibold focus:outline-none">
+                </div>
+                <ul id="suggestions" class="suggestions-list"></ul>
             </div>
-            <ul id="suggestions" class="suggestions-list"></ul>
-        </div>
-        <button id="genKeys" class="bg-mindaro p-3 rounded-lg shadow-sm text-eerie-black font-semibold flex justify-center items-center hover:shadow-glow-mindaro transition-shadow duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-            </svg>
-            KEYS
-        </button>
-    </div>
-
-    <div class="flex-grow bg-light-gray p-3 rounded-lg shadow-inner mb-4 overflow-y-auto">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-extrabold text-rio-blue uppercase">Encrypted Archives</h3>
-            <span class="text-xs text-gray-subtle">Recent Operations</span>
+            <button id="genKeys" class="bg-mindaro p-3 rounded-lg shadow-sm text-eerie-black font-semibold flex justify-center items-center hover:shadow-glow-mindaro transition-shadow duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                KEYS
+            </button>
         </div>
 
-        <!-- The container for dynamically generated cards -->
-        <div id="keyCardsContainer" class="grid grid-cols-1 gap-2">
-            <!-- Cards will be inserted here by JavaScript -->
-        </div>
+        <div id="Vault" class="flex-grow bg-light-gray p-3 rounded-lg shadow-inner mb-4 overflow-y-auto">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-extrabold text-rio-blue uppercase">Encrypted Archives</h3>
+                <span class="text-xs text-gray-subtle">Recent Operations</span>
+            </div>
 
-        <button id="showKeysBtn" class="w-full bg-rio-blue text-white py-2 rounded-lg mt-2 font-bold uppercase tracking-wide hover:scale-105 transition-transform duration-200 shadow-lg hover:shadow-glow-rio-blue">
-            View Full Vault
-        </button>
-    </div>
+            <!-- The container for dynamically generated cards -->
+            <div id="keyCardsContainer" class="grid grid-cols-1 gap-2">
+                <!-- Cards will be inserted here by JavaScript -->
+            </div>
+
+            <button id="showKeysBtn" class="w-full bg-rio-blue text-white py-2 rounded-lg mt-2 font-bold uppercase tracking-wide hover:scale-105 transition-transform duration-200 shadow-lg hover:shadow-glow-rio-blue">
+                View Full Vault
+            </button>
+        </div>
     </div>
 
    <!-- Add View With Bulk and Single Add Tabs -->
@@ -192,17 +200,18 @@
         </div>
 
     </div>
-    <!-- Settings View -->
 
+    <!-- Settings View -->
     <div id="settingsView" class="tab-content hidden flex flex-col items-center justify-center p-4">
     <h3 class="text-xl font-bold text-rio-blue mb-4">Settings</h3>
     <p class="text-gray-subtle">Settings content goes here.</p>
     </div>
 
-    <div class="flex justify-around items-center pt-4 border-t border-light-gray">
+    <!-- Bottom Navigation Bar -->
+    <div id="bottomNavBar" class="flex justify-around items-center pt-4 border-t border-light-gray">
         <button class="flex flex-col items-center flex-1 tab-button active px-2 py-1 rounded-md hover:bg-gray-100 transition-colors duration-200 focus:outline-none" data-tab="core">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-eerie-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v3m-3-6V7a3 3 0 1 1 6 0v4m-8 0h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v3m-3-6V7a3 3 0 1 1 6 0v4m-8 0h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z"/>
             </svg>
             <span class="text-xs font-semibold text-gray-subtle uppercase">My Vault</span>
         </button>

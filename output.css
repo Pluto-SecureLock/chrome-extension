@@ -8,10 +8,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-red-100: oklch(93.6% 0.032 17.717);
-    --color-amber-50: oklch(98.7% 0.022 95.277);
     --color-blue-50: oklch(97% 0.014 254.604);
-    --color-blue-500: oklch(62.3% 0.214 259.815);
-    --color-blue-600: oklch(54.6% 0.245 262.881);
     --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-300: oklch(87.2% 0.01 258.338);
@@ -755,28 +752,34 @@ body {
   flex-direction: column;
   justify-content: space-between;
 }
-@layer components {
-  .navbutton {
-    display: flex;
-    height: 40px;
-    width: 80px;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-md);
-    background-color: var(--color-blue-500);
-    text-align: center;
-    color: var(--color-amber-50);
-    &:hover {
-      @media (hover: hover) {
-        cursor: pointer;
-      }
-    }
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-blue-600);
-      }
-    }
-  }
+body.darkmode {
+  background-color: #232323;
+  color: #f1f1f1;
+  transition: background-color 0.3s, color 0.3s;
+}
+.darkmode .current-mission-card {
+  background: linear-gradient(135deg, #01042F 0%, #054FF0 100%);
+  color: #fff;
+}
+.darkmode button#DarkMode {
+  background-color: #8f8e8e;
+}
+.darkmode #moonIcon {
+  display: none;
+}
+.darkmode #sunIcon {
+  display: block;
+}
+.darkmode h1, .darkmode h2, .darkmode h3, .darkmode h4, .darkmode label, .darkmode p, .darkmode span {
+  color: #f1f5f9;
+}
+.darkmode input, .darkmode textarea {
+  background-color: #1f1f1f;
+  color: #f1f1f9;
+  border-color: #3a3a3a;
+}
+.darkmode input::placeholder, .darkmode textarea::placeholder {
+  color: #a3a3a3;
 }
 .text-rio-blue {
   color: #054FF0;
@@ -807,7 +810,7 @@ body {
 }
 input:focus {
   outline: none;
-  border-color: #DCFC73;
+  border-color: #01042F;
   box-shadow: 0 0 0 2px rgba(220, 252, 115, 0.5);
 }
 .tab-button.active {
@@ -920,6 +923,183 @@ input:focus {
 }
 #dropZone:hover svg {
   transform: scale(1.25);
+}
+.darkmode #dropZone {
+  background-color: #1e1e1e;
+  border-color: #2f2f2f;
+  color: #d1d5db;
+}
+.darkmode #dropZone:hover {
+  border-color: #054FF0;
+  background-color: #222;
+}
+.darkmode #typeBtn {
+  background-color: #2a2a2a;
+  color: #f1f5f9;
+  border: 1px solid #3a3a3a;
+  transition: background-color 0.3s, color 0.3s;
+}
+.darkmode #typeBtn:hover {
+  background-color: #3a3a3a;
+}
+.darkmode #typeBtn svg {
+  stroke: #f1f5f9;
+}
+.darkmode #typeBtn span {
+  color: #f1f5f9;
+}
+.darkmode .search-container {
+  background-color: #1e1e1e;
+  border: 1px solid #2f2f2f;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+}
+.darkmode .search-container input {
+  color: #f1f5f9;
+}
+.darkmode .search-container input::placeholder {
+  color: #9ca3af;
+}
+.darkmode .search-container svg {
+  color: #9ca3af;
+  stroke: #9ca3af;
+}
+.darkmode #suggestions {
+  background-color: #1e1e1e;
+  color: #f1f5f9;
+  border: 1px solid #2f2f2f;
+}
+.darkmode #Vault {
+  background-color: #1a1a1a;
+  color: #f1f5f9;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.darkmode #Vault h3.text-rio-blue {
+  color: #7fa9ff;
+}
+.darkmode #Vault .text-gray-subtle {
+  color: #9ca3af;
+}
+.darkmode #Vault .card, .darkmode #Vault .key-card {
+  background-color: #232323;
+  color: #f1f5f9;
+  border: 1px solid #2f2f2f;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.darkmode #Vault #showKeysBtn {
+  background: linear-gradient(135deg, #01042F 0%, #054FF0 100%);
+  color: #ffffff;
+  border: none;
+}
+.darkmode #Vault #showKeysBtn:hover {
+  box-shadow: 0 0 12px rgba(5, 79, 240, 0.7);
+  transform: scale(1.009);
+}
+.darkmode #Vault #keyCardsContainer > div {
+  background-color: #1f1f1f;
+  border-color: #2f2f2f;
+  color: #f1f5f9;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+.darkmode #Vault #keyCardsContainer > div:hover {
+  background-color: #2a2a2a;
+}
+.darkmode #Vault #keyCardsContainer .bg-rio-blue {
+  background-color: #054FF0;
+}
+.darkmode #Vault #keyCardsContainer p.text-eerie-black {
+  color: #f1f5f9;
+}
+.darkmode #Vault #keyCardsContainer p.text-gray-600 {
+  color: #a1a1aa;
+}
+.darkmode #Vault #keyCardsContainer .type-button {
+  color: #d1d5db;
+}
+.darkmode #Vault #keyCardsContainer .type-button:hover {
+  color: #ffffff;
+  transform: scale(1.15);
+}
+.darkmode #Vault #keyCardsContainer svg {
+  stroke: #f1f5f9;
+  fill: none;
+}
+.darkmode #addView {
+  background-color: #121212;
+  color: #f1f5f9;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.darkmode #addView .custom-tab-panel {
+  background-color: #1a1a1a;
+  border: 1px solid #2f2f2f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.darkmode #addView button[id^="tab"] {
+  background-color: #2a2a2a;
+  color: #ccc;
+  border-bottom: 4px solid transparent;
+}
+.darkmode #addView button[id^="tab"].custom-tab-active {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-bottom-color: #054FF0;
+}
+.darkmode #addView input, .darkmode #addView textarea {
+  background-color: #1e1e1e;
+  color: #f1f5f9;
+  border-color: #333;
+}
+.darkmode #addView input::placeholder, .darkmode #addView textarea::placeholder {
+  color: #9ca3af;
+}
+.darkmode #addView #dropZone {
+  background-color: #1e1e1e;
+  border-color: #2f2f2f;
+  color: #d1d5db;
+}
+.darkmode #addView #dropZone:hover {
+  border-color: #054FF0;
+  background-color: #222;
+}
+.darkmode #addView button {
+  color: #fff;
+}
+.darkmode #addView #AddCredentialBtn, .darkmode #addView #sendSecretsBtn {
+  background-color: #054FF0;
+  border: none;
+}
+.darkmode #addView #AddCredentialBtn:hover, .darkmode #addView #sendSecretsBtn:hover {
+  box-shadow: 0 0 10px rgba(5,79,240,0.5);
+}
+.darkmode #bottomNavBar .tab-button {
+  background-color: transparent;
+  color: #d1d5db;
+}
+.darkmode #bottomNavBar .tab-button:hover {
+  background-color: #1f1f1f;
+}
+.darkmode #bottomNavBar .tab-button.active {
+  background-color: #1f1f1f;
+  border-radius: 0.5rem;
+}
+.darkmode #bottomNavBar svg {
+  stroke: #f1f5f9;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+.darkmode #bottomNavBar .tab-button.active svg {
+  stroke: #054FF0;
+  opacity: 1;
+}
+.darkmode #bottomNavBar span {
+  color: #cbd5e1;
+}
+.darkmode #bottomNavBar .tab-button.active span {
+  color: #ffffff;
+}
+.darkmode #bottomNavBar .tab-button:hover svg {
+  stroke: #7fa9ff;
 }
 @property --tw-rotate-x {
   syntax: "*";

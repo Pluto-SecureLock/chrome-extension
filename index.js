@@ -45,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize bulk upload functionality
     initBulkUpload();
 
+    // Initialize dark mode toggle
+    initDarkMode();
+
     // Initialize tab visibility
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -128,7 +131,35 @@ document.addEventListener('click', (event) => {
 //       console.log("Pairing request sent to content script.");
 //     });
 //   });
+
+function initDarkMode() {
+  const toggleBtn = document.getElementById("DarkMode");
+  const body = document.body;
+  const moon = document.getElementById("moonIcon");
+  const sun  = document.getElementById("sunIcon");
+  const logo = document.getElementById("plutoLogo");
   
+  const LIGHT_LOGO = "./sources/Asset 3.svg";
+  const DARK_LOGO  = "./sources/Asset 4.svg";
+
+  // Load saved theme (if any)
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark") {
+    body.classList.add("darkmode");
+    logo.src = DARK_LOGO;
+    moon.classList.add("hidden");
+    sun.classList.remove("hidden");
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    const dark = body.classList.toggle("darkmode");
+    moon.classList.toggle("hidden", dark);
+    sun.classList.toggle("hidden", !dark);
+    logo.src = dark ? DARK_LOGO : LIGHT_LOGO;
+    localStorage.setItem("theme", dark ? "dark" : "light");
+  });
+}
+
 // Event listener for showKeysBtn
 document.getElementById("showKeysBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
