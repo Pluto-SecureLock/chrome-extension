@@ -55,8 +55,8 @@ input:focus {
     box-shadow: 0 0 0 2px rgba(220, 252, 115, 0.5);
 }
 .tab-button.active {
-    border-bottom: 3px solid #DCFC73;
-    color: #DCFC73;
+    border-bottom: 3px solid #054FF0;
+    color: #054FF0;
 }
 ::-webkit-scrollbar {
     width: 8px;
@@ -140,4 +140,19 @@ input:focus {
 
 .add-svg-button-icon svg {
   vertical-align: middle; /* Ensures proper alignment if not using flexbox */
+}
+
+/* === Folder-like Tabs === */
+.custom-tab-active {
+  background: #ffffff;
+  color: #0056b3;
+  border-bottom-color: #0056b3 !important;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.custom-tab-panel {
+  border-top: none;
+  border-radius: 0 0 1.5rem 1.5rem;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
 }

@@ -14,7 +14,7 @@
             <img src="./sources/Asset 3.svg" alt="Pluto Logo" class="h-8 mr-2">
         </div>
         <div class="flex items-center space-x-3">
-            <button id="pairBtn" class="p-2 rounded-full bg-mindaro shadow-lg hover:scale-110 transition-transform duration-300 focus:outline-none">
+            <button id="DarkMode" class="p-2 rounded-full bg-mindaro shadow-lg hover:scale-110 transition-transform duration-300 focus:outline-none">
                 <svg class="w-6 h-6 text-eerie-black dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 0 1-.5-17.986V3c-.354.966-.5 1.911-.5 3a9 9 0 0 0 9 9c.239 0 .254.018.488 0A9.004 9.004 0 0 1 12 21Z"/>
                 </svg>
@@ -125,64 +125,56 @@
     </div>
     </div>
 
-    <!-- Add View With bulk and single add -->
-    <div id="addView" class="tab-content hidden flex flex-col items-center justify-center p-4 relative">
-        <h3 class="text-xl font-bold text-rio-blue mb-4">Add your Secrets</h3>
+   <!-- Add View With Bulk and Single Add Tabs -->
+    <div id="addView" class="hidden flex flex-col items-center justify-center p-4 relative">
+        <h3 class="text-xl font-bold text-rio-blue mb-6">Add your Secrets</h3>
 
-        <div id="modeToggleButton" class="absolute top-1 right-1 cursor-pointer p-2 rounded-full hover:bg-gray-100 flex items-center justify-center" title="Switch Mode">
-            <svg id="bulkAddIcon" class="w-6 h-6 text-rio-blue" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24" title="Switch to Single Credential Add">
-                <path fill-rule="evenodd" d="M9 7V2.221a2 2 0 0 0-.5.365L4.586 6.5a2 2 0 0 0-.365.5H9Zm2 0V2h7a2 2 0 0 1 2 2v6.41A7.5 7.5 0 1 0 10.5 22H6a2 2 0 0 1-2-2V9h5a2 2 0 0 0 2-2Z" clip-rule="evenodd"/>
-                <path fill-rule="evenodd" d="M9 16a6 6 0 1 1 12 0 6 6 0 0 1-12 0Zm6-3a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1h-1a1 1 0 1 1 0-2h1v-1a1 1 0 0 1 1-1Z" clip-rule="evenodd"/>
-            </svg>
-
-            <svg id="singleAddIcon" class="w-6 h-6 text-rio-blue hidden" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" title="Switch to Bulk Add">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7 7V5"/>
-            </svg>
+        <!-- Tabs -->
+        <div class="w-full max-w-lg mb-4">
+            <div class="flex rounded-t-2xl overflow-hidden shadow-md">
+            <button id="tabSingleAdd" class="flex-1 py-3 font-semibold text-center bg-white text-rio-blue border-b-4 border-rio-blue cursor-pointer custom-tab-active transition-colors duration-200">
+                Single Add
+            </button>
+            <button id="tabBulkAdd" class="flex-1 py-3 font-semibold text-center bg-gray-100 text-gray-500 border-b-4 border-transparent cursor-pointer hover:bg-white transition-colors duration-200">
+                Bulk Add
+            </button>
+            </div>
         </div>
 
-        <div id="bulkAddContainer" class="w-full hidden">
-            <textarea id="bulkSecretsTextarea"
-                      class="w-full h-48 p-3 mb-4 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y"
-                      placeholder="Paste multiple secrets here, e.g., site,url,username,password,note\n"></textarea>
-            <button id="sendSecretsBtn"
-                    class="mx-auto block bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:scale-110 transition-transform duration-200">
-                Send Bulk Secrets
+        <!-- Single Add -->
+        <div id="singleAddBox" class="custom-tab-panel w-full max-w-lg bg-white rounded-b-2xl shadow-lg p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label for="singleHostField" class="block text-sm font-medium text-gray-700">Host (Site Name)</label>
+                <input type="text" id="singleHostField" class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue" placeholder="e.g., amazon">
+            </div>
+            <div>
+                <label for="singleUsernameField" class="block text-sm font-medium text-gray-700">Username</label>
+                <input type="text" id="singleUsernameField" class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue" placeholder="e.g., alice@example.com">
+            </div>
+            <div class="md:col-span-2">
+                <label for="singlePasswordField" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="singlePasswordField" class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue" placeholder="Enter password">
+            </div>
+            <div class="md:col-span-2">
+                <label for="singleNotesField" class="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+                <textarea id="singleNotesField" class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y h-24" placeholder="Any relevant notes, e.g., '2FA enabled'"></textarea>
+            </div>
+            </div>
+            <button id="AddCredentialBtn" class="mx-auto block bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:scale-110 transition-transform duration-200">
+            Add Credential
             </button>
         </div>
 
-        <div id="singleAddContainer" class="w-full">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label for="singleHostField" class="block text-sm font-medium text-gray-700">Host (Site Name)</label>
-                    <input type="text" id="singleHostField"
-                          class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue"
-                          placeholder="e.g., amazon">
-                </div>
-                <div>
-                    <label for="singleUsernameField" class="block text-sm font-medium text-gray-700">Username</label>
-                    <input type="text" id="singleUsernameField"
-                          class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue"
-                          placeholder="e.g., alice@example.com">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="singlePasswordField" class="block text-sm font-medium text-gray-700">Password</label>
-                    <input type="password" id="singlePasswordField"
-                          class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue"
-                          placeholder="Enter password">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="singleNotesField" class="block text-sm font-medium text-gray-700">Notes (Optional)</label>
-                    <textarea id="singleNotesField"
-                              class="w-full p-3 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y h-24"
-                              placeholder="Any relevant notes, e.g., '2FA enabled'"></textarea>
-                </div>
-            </div>
-            <button id="AddCredentialBtn"
-                    class="mx-auto block bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:scale-110 transition-transform duration-200">
-                Add Credential
+        <!-- Bulk Add -->
+        <div id="bulkAddBox" class="custom-tab-panel hidden w-full max-w-lg bg-white rounded-b-2xl shadow-lg p-6">
+            <textarea id="bulkSecretsTextarea" class="w-full h-48 p-3 mb-4 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y" placeholder="Paste multiple secrets here, e.g., site,url,username,password,note\n"></textarea>
+            <button id="sendSecretsBtn" class="mx-auto block bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:scale-110 transition-transform duration-200">
+            Send Bulk Secrets
             </button>
         </div>
     </div>
+    <!-- Settings View -->
 
     <div id="settingsView" class="tab-content hidden flex flex-col items-center justify-center p-4">
     <h3 class="text-xl font-bold text-rio-blue mb-4">Settings</h3>

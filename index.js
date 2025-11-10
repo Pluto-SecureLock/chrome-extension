@@ -43,12 +43,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const bulkAddIcon = document.getElementById('bulkAddIcon');
-    const singleAddIcon = document.getElementById('singleAddIcon');
+    // const bulkAddIcon = document.getElementById('bulkAddIcon');
+    // const singleAddIcon = document.getElementById('singleAddIcon');
 
-    // Initial state: Bulk Add is active, so bulkAddIcon should be hidden and singleAddIcon visible
-    bulkAddIcon.classList.remove('hidden');
-    singleAddIcon.classList.add('hidden');
+    // // Initial state: Bulk Add is active, so bulkAddIcon should be hidden and singleAddIcon visible
+    // bulkAddIcon.classList.remove('hidden');
+    // singleAddIcon.classList.add('hidden');
 
     // Initialize tab visibility
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -117,7 +117,7 @@ deleteOptionBtn.addEventListener('click', () => {
     confirmAndDelete(); // Handle delete action
 });
 
-// Close menu if clicked outside
+// Close edit menu if clicked outside
 document.addEventListener('click', (event) => {
     if (isMenuOpen && !menuOptionsCard.contains(event.target) && !menuBtn.contains(event.target)) {
         menuOptionsCard.classList.add('hidden');
@@ -125,14 +125,14 @@ document.addEventListener('click', (event) => {
     }
 });
 
-// Event listener for pairBtn
-document.getElementById("pairBtn").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, handleSendMessageResponse);
-      console.log("Pairing request sent to content script.");
-    });
-  });
+// // Event listener for pairBtn
+// document.getElementById("pairBtn").addEventListener("click", () => {
+//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//       if (!tabs[0]) return;
+//       chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, handleSendMessageResponse);
+//       console.log("Pairing request sent to content script.");
+//     });
+//   });
   
 // Event listener for showKeysBtn
 document.getElementById("showKeysBtn").addEventListener("click", () => {
@@ -240,27 +240,28 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
 });
 
 // Event listener for Add View
-document.getElementById('modeToggleButton').addEventListener('click', function() {
-    if (isBulkMode) {
-        // Switch to Bulk Add mode
-        bulkAddContainer.classList.remove('hidden');
-        singleAddContainer.classList.add('hidden');
+const tabSingleAdd = document.getElementById("tabSingleAdd");
+const tabBulkAdd = document.getElementById("tabBulkAdd");
+const singleAddBox = document.getElementById("singleAddBox");
+const bulkAddBox = document.getElementById("bulkAddBox");
 
-        //Show SingleAdd Icon
-        bulkAddIcon.classList.add('hidden'); // Hide bulk icon
-        singleAddIcon.classList.remove('hidden'); // Show single icon
-    } else {
-        // Switch to Single Add mode
-        singleAddContainer.classList.remove('hidden');
-        bulkAddContainer.classList.add('hidden');
-
-        singleAddIcon.classList.add('hidden'); // Hide single icon
-        bulkAddIcon.classList.remove('hidden'); // Show bulk icon
-    }
-    isBulkMode = !isBulkMode; // Toggle the mode
+tabSingleAdd.addEventListener("click", () => {
+  tabSingleAdd.classList.add("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabBulkAdd.classList.remove("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabBulkAdd.classList.add("text-gray-500", "bg-gray-100");
+  singleAddBox.classList.remove("hidden");
+  bulkAddBox.classList.add("hidden");
 });
 
-// NEW: Event listener for currentMissionClickableArea
+tabBulkAdd.addEventListener("click", () => {
+  tabBulkAdd.classList.add("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabSingleAdd.classList.remove("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabSingleAdd.classList.add("text-gray-500", "bg-gray-100");
+  bulkAddBox.classList.remove("hidden");
+  singleAddBox.classList.add("hidden");
+});
+
+// Event listener for current-mission-card click
 document.getElementById("currentMissionClickableArea").addEventListener("click", (event) => {
     // Only trigger if not in edit mode, not clicking modifyBtn/typeBtn, AND credentials are not yet shown
     if (!isEditMode && !event.target.closest('#modifyBtn') && !event.target.closest('#typeBtn') && document.getElementById("credentialDisplay").classList.contains("hidden")) {
@@ -278,7 +279,6 @@ document.getElementById("currentMissionClickableArea").addEventListener("click",
         console.log("Click on current-mission-card prevented because credentials are already displayed.");
     }
 });
-
 
 // Consolidated chrome.runtime.onMessage.addListener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
