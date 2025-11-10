@@ -70,7 +70,7 @@ input:focus {
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #DCFC73;
+    background: #0d4b87;
 }
 .current-mission-card::before {
     content: '';
@@ -155,4 +155,23 @@ input:focus {
   border-top: none;
   border-radius: 0 0 1.5rem 1.5rem;
   box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
+}
+
+/* === Drag & Drop Zone === */
+#dropZone {
+  background: #fafafa;
+  transition: all 0.25s ease;
+}
+
+#dropZone.dragover {
+  border-color: #0d4b87;
+  background: #f0f9ff;
+}
+
+#dropZone svg {
+  transition: transform 0.25s ease;
+}
+
+#dropZone:hover svg {
+  transform: scale(1.25);
 }

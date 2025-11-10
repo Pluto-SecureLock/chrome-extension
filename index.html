@@ -126,7 +126,7 @@
     </div>
 
    <!-- Add View With Bulk and Single Add Tabs -->
-    <div id="addView" class="hidden flex flex-col items-center justify-center p-4 relative">
+    <div id="addView" class="tab-content hidden flex flex-col items-center justify-center p-4 relative">
         <h3 class="text-xl font-bold text-rio-blue mb-6">Add your Secrets</h3>
 
         <!-- Tabs -->
@@ -168,11 +168,29 @@
 
         <!-- Bulk Add -->
         <div id="bulkAddBox" class="custom-tab-panel hidden w-full max-w-lg bg-white rounded-b-2xl shadow-lg p-6">
-            <textarea id="bulkSecretsTextarea" class="w-full h-48 p-3 mb-4 border border-light-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-rio-blue resize-y" placeholder="Paste multiple secrets here, e.g., site,url,username,password,note\n"></textarea>
-            <button id="sendSecretsBtn" class="mx-auto block bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:scale-110 transition-transform duration-200">
-            Send Bulk Secrets
-            </button>
+        <div id="dropZone"
+            class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-200 cursor-pointer hover:border-rio-blue hover:bg-blue-50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                   d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+            </svg>
+            <p class="text-gray-600 font-medium">Drag & Drop your file here</p>
+            <p class="text-sm text-gray-400 mt-1">or click to browse (.csv or .txt)</p>
+            <input id="fileInput" type="file" accept=".csv,.txt" class="hidden" />
         </div>
+
+        <div id="fileInfo" class="mt-4 hidden text-center text-gray-700">
+            <p class="text-sm font-medium">Selected file:</p>
+            <p id="fileName" class="text-sm text-rio-blue font-semibold mt-1"></p>
+        </div>
+
+        <button id="sendSecretsBtn"
+                class="mx-auto mt-6 block bg-rio-blue text-white py-2 px-6 rounded-lg font-bold uppercase tracking-wide hover:scale-110 transition-transform duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled>
+            Upload File
+        </button>
+        </div>
+
     </div>
     <!-- Settings View -->
 

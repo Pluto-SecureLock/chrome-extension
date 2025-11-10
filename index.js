@@ -42,13 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("currentSite").textContent = "No active tab";
         }
     });
-
-    // const bulkAddIcon = document.getElementById('bulkAddIcon');
-    // const singleAddIcon = document.getElementById('singleAddIcon');
-
-    // // Initial state: Bulk Add is active, so bulkAddIcon should be hidden and singleAddIcon visible
-    // bulkAddIcon.classList.remove('hidden');
-    // singleAddIcon.classList.add('hidden');
+    // Initialize bulk upload functionality
+    initBulkUpload();
 
     // Initialize tab visibility
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -164,17 +159,26 @@ document.getElementById("typeBtn").addEventListener("click", () => {
     window.close(); //need it, otherwise the extension window is focused and the HID inputs are misinterpreted
   });
 
-// Event listener for sendSecretsBtn
-document.getElementById("sendSecretsBtn").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      const secretsToSend = document.getElementById("bulkSecretsTextarea").value; // Get the value
-      console.log("Bulk secrets to send:", secretsToSend); // Log the value for debugging
-      chrome.tabs.sendMessage(tabs[0].id, { action: "bulkAddPluto", secrets: secretsToSend }, handleSendMessageResponse);
-                        // Optionally provide feedback to the user, e.g., clear the textarea
-                        document.getElementById("bulkSecretsTextarea").value = ''; // Clear textarea on success
+// Event listener for bulkAddBtn (Send Secrets)
+document.getElementById("sendSecretsBtn").addEventListener("click", async () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return alert("Select a .csv or .txt file first.");
+
+  const text = await file.text();
+  console.log("📄 Sending secrets:", text.slice(0, 100) + "...");
+
+  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    if (!tab) return;
+    chrome.tabs.sendMessage(tab.id, { action: "bulkAddPluto", secrets: text }, (res) => {
+      if (chrome.runtime.lastError) return alert("Error: " + chrome.runtime.lastError.message);
+      alert("✅ Secrets sent!");
+      document.getElementById("fileInput").value = "";
+      document.getElementById("fileInfo").classList.add("hidden");
+      document.getElementById("fileName").textContent = "";
+      document.getElementById("sendSecretsBtn").disabled = true;
     });
   });
+});
 
 // Event listener for “Add Credential” (Single Add)
 document.getElementById("AddCredentialBtn").addEventListener("click", () => {
@@ -526,4 +530,51 @@ function confirmAndDelete() {
             });
         });
     }
+}
+
+// === Bulk Upload Setup ===
+function initBulkUpload() {
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("fileInput");
+  const fileInfo  = document.getElementById("fileInfo");
+  const fileName  = document.getElementById("fileName");
+  const uploadBtn = document.getElementById("sendSecretsBtn");
+
+  const handleFile = (file) => {
+    fileName.textContent = file.name;
+    fileInfo.classList.remove("hidden");
+    uploadBtn.disabled = false;
+  };
+
+  // Click → open file picker
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  // Input selection
+  fileInput.addEventListener("change", e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  // Drag & drop visuals
+  ["dragover", "dragleave", "drop"].forEach(ev =>
+    dropZone.addEventListener(ev, e => e.preventDefault())
+  );
+
+  dropZone.addEventListener("dragover", () =>
+    dropZone.classList.add("border-rio-blue", "bg-blue-50")
+  );
+
+  ["dragleave", "drop"].forEach(ev =>
+    dropZone.addEventListener(ev, () =>
+      dropZone.classList.remove("border-rio-blue", "bg-blue-50")
+    )
+  );
+
+  // Drop handler
+  dropZone.addEventListener("drop", e => {
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!/(\.csv|\.txt)$/i.test(file.name))
+      return alert("Please upload a .csv or .txt file");
+    handleFile(file);
+  });
 }
