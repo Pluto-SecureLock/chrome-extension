@@ -752,35 +752,6 @@ body {
   flex-direction: column;
   justify-content: space-between;
 }
-body.darkmode {
-  background-color: #232323;
-  color: #f1f1f1;
-  transition: background-color 0.3s, color 0.3s;
-}
-.darkmode .current-mission-card {
-  background: linear-gradient(135deg, #01042F 0%, #054FF0 100%);
-  color: #fff;
-}
-.darkmode button#DarkMode {
-  background-color: #8f8e8e;
-}
-.darkmode #moonIcon {
-  display: none;
-}
-.darkmode #sunIcon {
-  display: block;
-}
-.darkmode h1, .darkmode h2, .darkmode h3, .darkmode h4, .darkmode label, .darkmode p, .darkmode span {
-  color: #f1f5f9;
-}
-.darkmode input, .darkmode textarea {
-  background-color: #1f1f1f;
-  color: #f1f1f9;
-  border-color: #3a3a3a;
-}
-.darkmode input::placeholder, .darkmode textarea::placeholder {
-  color: #a3a3a3;
-}
 .text-rio-blue {
   color: #054FF0;
 }
@@ -923,6 +894,35 @@ input:focus {
 }
 #dropZone:hover svg {
   transform: scale(1.25);
+}
+body.darkmode {
+  background-color: #232323;
+  color: #f1f1f1;
+  transition: background-color 0.3s, color 0.3s;
+}
+.darkmode .current-mission-card {
+  background: linear-gradient(135deg, #01042F 0%, #054FF0 100%);
+  color: #fff;
+}
+.darkmode button#DarkMode {
+  background-color: #8f8e8e;
+}
+.darkmode #moonIcon {
+  display: none;
+}
+.darkmode #sunIcon {
+  display: block;
+}
+.darkmode h1, .darkmode h2, .darkmode h3, .darkmode h4, .darkmode label, .darkmode p, .darkmode span {
+  color: #f1f5f9;
+}
+.darkmode input, .darkmode textarea {
+  background-color: #1f1f1f;
+  color: #f1f1f9;
+  border-color: #3a3a3a;
+}
+.darkmode input::placeholder, .darkmode textarea::placeholder {
+  color: #a3a3a3;
 }
 .darkmode #dropZone {
   background-color: #1e1e1e;
