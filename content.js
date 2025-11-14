@@ -76,6 +76,7 @@ async function commandSerial(
       return "ERROR: Unknown action";
     }
 
+    console.log("Sending command:", command.trim());
     const data = new TextEncoder().encode(command);
     await writer.write(data);
 
@@ -179,6 +180,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 const randPassword = "aKrteads!23"; // temnporary random password
 const signUpArray = ["up", "create", "register", "join", "start", "new"]; //words that indicate signup forms
 let passwordFields;
+let generatedPassword = null;
+let signUpFormDetected = false;
 
 // function detectSignupForm() {
 //     passwordFields = document.querySelectorAll('input[type="password"]');
@@ -199,6 +202,7 @@ function setupSignupObserver() {
 
   // set up the observer for when the DOM changes
   const observer = new MutationObserver((mutations) => {
+
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (!(node instanceof HTMLElement)) return;
@@ -212,6 +216,7 @@ function setupSignupObserver() {
         if (node.querySelectorAll) {
           const inputFields = node.querySelectorAll("input");
           const submitButtons = node.querySelectorAll('button[type="submit"]');
+          if(submitButtons.length!=0){
           let submitButtonText = submitButtons[0].textContent
             .trim()
             .toLowerCase();
@@ -227,21 +232,30 @@ function setupSignupObserver() {
           ); //move all this into a function
           if (inputFields.length > 2 && isSignupButton) {
             //checks if more than 2 input fields are present
+              console.log("Signup form detected in added node");
+              if (!signUpFormDetected) {
+                signUpFormDetected = true;
+                generatedPassword = null;   // reset for new form
+              }
             const passwordFields = node.querySelectorAll(
               'input[type="password"]'
             );
-            passwordFields.forEach(handlePasswordField); //this might generate different passwords for password and confirm password fields
-            if (openedPort) {
+
+            if (openedPort && !generatedPassword) {
+              passwordFields[0].focus(); //focus the first password field before typing. Change if we have a confirmation field as well
+              console.log("Generating password for signup form");
               (async () => {
-                const result = await commandSerial(
+                const generatedPassword = await commandSerial(
                   openedPort,
                   "generatePasswordPluto"
                 );
-                console.log("Generated password:", result);
+                console.log("Generated password:", generatedPassword);
               })();
             }
-          }
-        }
+
+            passwordFields.forEach(handlePasswordField); //this might generate different passwords for password and confirm password fields
+
+        }}}
       });
     });
   });
@@ -274,7 +288,15 @@ function handlePasswordField(input) {
     showPasswordSuggestionBox(input, position);
   });
 
-  input.addEventListener("blur", hidePasswordSuggestionBox); //hidePasswordSuggestionBox
+  input.addEventListener("blur", () =>{
+    hidePasswordSuggestionBox();
+    if (![...document.querySelectorAll('input[type="password"]')]
+          .some(el => el === document.activeElement)) {
+        generatedPassword = null;
+        signUpFormDetected = false;
+    }
+  }
+    ); //hidePasswordSuggestionBox
 }
 
 // init when ready
@@ -314,10 +336,24 @@ function showPasswordSuggestionBox(input, position) {
       font-family: sans-serif;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
+      .suggestion-box:hover {
+      background: #DDDDDD;
+      cursor: pointer;
+    }
   </style>
   <div class="suggestion-box">Suggested: ` +
     randPassword +
     `</div>`; //replace with a generated password from the device
+
+  const suggestionDiv = shadow.querySelector('.suggestion-box');
+  // const suggestionDiv = document.querySelector('.suggestion-box');
+
+  suggestionDiv.addEventListener("mousedown", (e) => {
+    e.preventDefault(); //prevent blur on input field
+    console.log("Suggestion clicked");
+    
+    //generatefunction here
+});
 }
 
 function hidePasswordSuggestionBox() {
