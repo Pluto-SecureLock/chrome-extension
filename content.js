@@ -1,6 +1,6 @@
 let openedPort = null;
 
-async function openSerial() {
+async function openSerial() { //background.js
   try {
     const port = await navigator.serial.requestPort({
       filters: [{ usbVendorId: 0x239a }], // Optional: specific to your board
@@ -15,7 +15,7 @@ async function openSerial() {
 }
 
 // Modify commandSerial to accept 'secrets', 'username', and 'password' for relevant commands
-async function commandSerial(
+async function commandSerial( //background.js
   port,
   action,
   domain = "",
@@ -67,7 +67,7 @@ async function commandSerial(
       command = `update ${domain}[username:${username},password:"${password}",note:${note}]\n`;
     } else if (action === "generatePasswordPluto") {
       //password Gen
-      command = `passwd len=12,lvl=2\n`;
+      command = `passwd len=30,lvl=2\n`;
     } else if (action === "PlutoInit") {
       // This is just to initialize the connection
       command = "status\n"; // Sending a simple command to confirm connection
@@ -118,7 +118,7 @@ async function commandSerial(
 }
 
 // Listen for messages from the extension popup (index.js)
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //background.js
   (async () => {
     // Use an async IIFE to allow await inside the listener
     if (!openedPort) {
@@ -194,7 +194,7 @@ let signUpFormDetected = false;
 
 // }
 
-function setupSignupObserver() {
+function setupSignupObserver() { //content.js
   // check if theres a passwsord field already on the page
   document
     .querySelectorAll('input[type="password"]')
@@ -268,7 +268,7 @@ function setupSignupObserver() {
   console.log("Password field observer started");
 }
 
-function handlePasswordField(input) {
+function handlePasswordField(input) {//content.js
   // prevent duplicate handlers????
   if (input.dataset.passwordHandlerAttached) return;
   input.dataset.passwordHandlerAttached = "true";
@@ -306,7 +306,7 @@ if (document.readyState === "loading") {
   setupSignupObserver();
 }
 
-function showPasswordSuggestionBox(input, position) {
+function showPasswordSuggestionBox(input, position) { //content.js
   // Remove any existing suggestion box
   hidePasswordSuggestionBox();
 
@@ -341,10 +341,10 @@ function showPasswordSuggestionBox(input, position) {
       cursor: pointer;
     }
   </style>
-  <div class="suggestion-box">Suggested: ` +
-    randPassword +
-    `</div>`; //replace with a generated password from the device
-
+  <div class="suggestion-box">Use Pluto Suggested Password: // +
+   
+    </div>`; //replace with a generated password from the device
+ // randPassword +
   const suggestionDiv = shadow.querySelector('.suggestion-box');
   // const suggestionDiv = document.querySelector('.suggestion-box');
 
@@ -356,7 +356,7 @@ function showPasswordSuggestionBox(input, position) {
 });
 }
 
-function hidePasswordSuggestionBox() {
+function hidePasswordSuggestionBox() {  //content.js
   const existingBox = document.getElementById("password-suggestion-box");
   if (existingBox) {
     existingBox.remove();
