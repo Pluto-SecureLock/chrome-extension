@@ -56,13 +56,13 @@ async function commandSerial( //background.js
       command = "type " + domain + "\n";
     } else if (action === "bulkAddPluto") {
       // For bulkAdd, the secrets string is the command itself
-      command = secrets + "\n";
+      command = "bulkadd " + secrets + "\n";
     } else if (action === "singleAddPluto") {
-      // For singleAdd, the secrets string is the command itself
       command = "add " + secrets + "\n";
+		} else if (action === "deleteKeyPluto") {
+      command = "delete " + domain + "\n";
     } else if (action === "updateKeyPluto") {
-      // New command for updating an existing key
-      // Format: update [domain]:[username],[password],[note]
+      // Format: update domain:[username,"password","note"]
       const note = ""; // Assuming note is not part of update for now
       command = `update ${domain}[username:${username},password:"${password}",note:${note}]\n`;
     } else if (action === "generatePasswordPluto") {
@@ -87,7 +87,8 @@ async function commandSerial( //background.js
       action === "updateKeyPluto" ||
       action === "bulkAddPluto" ||
       action === "singleAddPluto" ||
-      action === "generatePasswordPluto"
+      action === "generatePasswordPluto" ||
+			action === "deleteKeyPluto"
     ) {
       let receivedData = "";
       while (true) {
@@ -151,6 +152,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
       responseAction = "updateKeyResponse";
     } else if (message.action === "singleAddPluto") {
       responseAction = "singleAddResponse";
+    } else if (message.action === "deleteKeyPluto") {
+            responseAction = "deleteKeyResponse";
+        }
     } else {
       // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
       // we can simply send a success status and return.

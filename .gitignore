@@ -1,2 +1,2 @@
-node_modules/
-# Logs
+# Ignore node_modules directory
+/node_modules
