@@ -154,7 +154,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
       responseAction = "singleAddResponse";
     } else if (message.action === "deleteKeyPluto") {
             responseAction = "deleteKeyResponse";
-        }
     } else {
       // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
       // we can simply send a success status and return.
@@ -365,4 +364,5 @@ function hidePasswordSuggestionBox() {  //content.js
   if (existingBox) {
     existingBox.remove();
   }
+
 }
