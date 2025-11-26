@@ -96,7 +96,7 @@ menuBtn.addEventListener('click', (event) => {
         menuOptionsCard.classList.add('hidden');
         isMenuOpen = false;
     }
-});
+});  //NEEDS TO BE CHANGED
 
 const menuIcon = document.getElementById('menuIcon');
 const uploadIcon = document.getElementById('uploadIcon');
@@ -106,6 +106,7 @@ modifyOptionBtn.addEventListener('click', () => {
     isMenuOpen = false;
     enterEditMode(); // Enter edit mode
 });
+
 
 const deleteIcon = document.getElementById('deleteIcon');
 const deleteOptionBtn = document.getElementById('deleteOptionBtn');
