@@ -3,7 +3,7 @@ let openedPort = null;
 async function openSerial() { //background.js
   try {
     const port = await navigator.serial.requestPort({
-      filters: [{ usbVendorId: 0x239a }], // Optional: specific to your board
+      filters: [{ usbVendorId: 0x239A }], // Optional: specific to your board
     });
 
     await port.open({ baudRate: 9600 });
@@ -366,3 +366,4 @@ function hidePasswordSuggestionBox() {  //content.js
   }
 
 }
+
