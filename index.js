@@ -42,16 +42,11 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("currentSite").textContent = "No active tab";
         }
     });
+    // Initialize bulk upload functionality
+    initBulkUpload();
 
-    const toggleAddModeBtn = document.getElementById('toggleAddModeBtn');
-    const bulkAddContainer = document.getElementById('bulkAddContainer');
-    const singleAddContainer = document.getElementById('singleAddContainer');
-    const bulkAddIcon = document.getElementById('bulkAddIcon');
-    const singleAddIcon = document.getElementById('singleAddIcon');
-
-    // Initial state: Bulk Add is active, so bulkAddIcon should be hidden and singleAddIcon visible
-    bulkAddIcon.classList.add('hidden');
-    singleAddIcon.classList.remove('hidden');
+    // Initialize dark mode toggle
+    initDarkMode();
 
     // Initialize tab visibility
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -101,7 +96,7 @@ menuBtn.addEventListener('click', (event) => {
         menuOptionsCard.classList.add('hidden');
         isMenuOpen = false;
     }
-});
+});  //NEEDS TO BE CHANGED
 
 const menuIcon = document.getElementById('menuIcon');
 const uploadIcon = document.getElementById('uploadIcon');
@@ -112,15 +107,16 @@ modifyOptionBtn.addEventListener('click', () => {
     enterEditMode(); // Enter edit mode
 });
 
+
 const deleteIcon = document.getElementById('deleteIcon');
-const deleteOptionBtn = document.getElementById('deleteOptionBtn'); 
+const deleteOptionBtn = document.getElementById('deleteOptionBtn');
 deleteOptionBtn.addEventListener('click', () => {
     menuOptionsCard.classList.add('hidden'); // Hide the options card
     isMenuOpen = false;
     confirmAndDelete(); // Handle delete action
 });
 
-// Close menu if clicked outside
+// Close edit menu if clicked outside
 document.addEventListener('click', (event) => {
     if (isMenuOpen && !menuOptionsCard.contains(event.target) && !menuBtn.contains(event.target)) {
         menuOptionsCard.classList.add('hidden');
@@ -128,15 +124,43 @@ document.addEventListener('click', (event) => {
     }
 });
 
-// Event listener for pairBtn
-document.getElementById("pairBtn").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, handleSendMessageResponse);
-      console.log("Pairing request sent to content script.");
-    });
-  });
+// // Event listener for pairBtn
+// document.getElementById("pairBtn").addEventListener("click", () => {
+//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//       if (!tabs[0]) return;
+//       chrome.tabs.sendMessage(tabs[0].id, { action: "PlutoInit" }, handleSendMessageResponse);
+//       console.log("Pairing request sent to content script.");
+//     });
+//   });
+
+function initDarkMode() {
+  const toggleBtn = document.getElementById("DarkMode");
+  const body = document.body;
+  const moon = document.getElementById("moonIcon");
+  const sun  = document.getElementById("sunIcon");
+  const logo = document.getElementById("plutoLogo");
   
+  const LIGHT_LOGO = "./sources/Asset 3.svg";
+  const DARK_LOGO  = "./sources/Asset 4.svg";
+
+  // Load saved theme (if any)
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark") {
+    body.classList.add("darkmode");
+    logo.src = DARK_LOGO;
+    moon.classList.add("hidden");
+    sun.classList.remove("hidden");
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    const dark = body.classList.toggle("darkmode");
+    moon.classList.toggle("hidden", dark);
+    sun.classList.toggle("hidden", !dark);
+    logo.src = dark ? DARK_LOGO : LIGHT_LOGO;
+    localStorage.setItem("theme", dark ? "dark" : "light");
+  });
+}
+
 // Event listener for showKeysBtn
 document.getElementById("showKeysBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -167,16 +191,26 @@ document.getElementById("typeBtn").addEventListener("click", () => {
     window.close(); //need it, otherwise the extension window is focused and the HID inputs are misinterpreted
   });
 
-// Event listener for sendSecretsBtn
-document.getElementById("sendSecretsBtn").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      const secretsToSend = document.getElementById("bulkSecretsTextarea").value; // Get the value
-      chrome.tabs.sendMessage(tabs[0].id, { action: "bulkAddPluto", secrets: secretsToSend }, handleSendMessageResponse);
-                        // Optionally provide feedback to the user, e.g., clear the textarea
-                        document.getElementById("bulkSecretsTextarea").value = ''; // Clear textarea on success
+// Event listener for bulkAddBtn (Send Secrets)
+document.getElementById("sendSecretsBtn").addEventListener("click", async () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return alert("Select a .csv or .txt file first.");
+
+  const text = await file.text();
+  console.log("📄 Sending secrets:", text.slice(0, 100) + "...");
+
+  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    if (!tab) return;
+    chrome.tabs.sendMessage(tab.id, { action: "bulkAddPluto", secrets: text }, (res) => {
+      if (chrome.runtime.lastError) return alert("Error: " + chrome.runtime.lastError.message);
+      alert("✅ Secrets sent!");
+      document.getElementById("fileInput").value = "";
+      document.getElementById("fileInfo").classList.add("hidden");
+      document.getElementById("fileName").textContent = "";
+      document.getElementById("sendSecretsBtn").disabled = true;
     });
   });
+});
 
 // Event listener for “Add Credential” (Single Add)
 document.getElementById("AddCredentialBtn").addEventListener("click", () => {
@@ -187,15 +221,15 @@ document.getElementById("AddCredentialBtn").addEventListener("click", () => {
   const note     = document.getElementById("singleNotesField").value.trim();
 
   // (opcional) Validación rápida
-  if (!host || !username || !password) {
-    alert("Host, Username y Password son obligatorios");
+  if (!host || !password) {
+    alert("Host & Password are mandatory");
     return;
   }
 
   // 2 ▸ Armar el string en el mismo formato que espera Pluto:
   //     modify example.com[username:...,password:...,note:...]
   const secretsToSend =
-    `${host}:${host},${username},${password},${note}`;
+    `${host}:${host},${username},"${password}","${note}"`;
 
   // 3 ▸ Enviar al content-script
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -241,27 +275,29 @@ document.getElementById("viewPasswordBtn").addEventListener("click", () => {
     isPasswordVisible = !isPasswordVisible;
 });
 
-// Event listener for openWindow
-document.getElementById('modeToggleButton').addEventListener('click', function() {
-    if (isBulkMode) {
-        // Switch to Single Add mode
-        bulkAddContainer.classList.add('hidden');
-        singleAddContainer.classList.remove('hidden');
-        
-        bulkAddIcon.classList.remove('hidden'); // Show bulk icon
-        singleAddIcon.classList.add('hidden'); // Hide single icon
-    } else {
-        // Switch to Bulk Add mode
-        singleAddContainer.classList.add('hidden');
-        bulkAddContainer.classList.remove('hidden');
+// Event listener for Add View
+const tabSingleAdd = document.getElementById("tabSingleAdd");
+const tabBulkAdd = document.getElementById("tabBulkAdd");
+const singleAddBox = document.getElementById("singleAddBox");
+const bulkAddBox = document.getElementById("bulkAddBox");
 
-        singleAddIcon.classList.remove('hidden'); // Hide bulk icon
-        bulkAddIcon.classList.add('hidden'); // Show single icon
-    }
-    isBulkMode = !isBulkMode; // Toggle the mode
+tabSingleAdd.addEventListener("click", () => {
+  tabSingleAdd.classList.add("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabBulkAdd.classList.remove("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabBulkAdd.classList.add("text-gray-500", "bg-gray-100");
+  singleAddBox.classList.remove("hidden");
+  bulkAddBox.classList.add("hidden");
 });
 
-// NEW: Event listener for currentMissionClickableArea
+tabBulkAdd.addEventListener("click", () => {
+  tabBulkAdd.classList.add("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabSingleAdd.classList.remove("custom-tab-active", "text-rio-blue", "bg-white", "border-b-4", "border-rio-blue");
+  tabSingleAdd.classList.add("text-gray-500", "bg-gray-100");
+  bulkAddBox.classList.remove("hidden");
+  singleAddBox.classList.add("hidden");
+});
+
+// Event listener for current-mission-card click
 document.getElementById("currentMissionClickableArea").addEventListener("click", (event) => {
     // Only trigger if not in edit mode, not clicking modifyBtn/typeBtn, AND credentials are not yet shown
     if (!isEditMode && !event.target.closest('#modifyBtn') && !event.target.closest('#typeBtn') && document.getElementById("credentialDisplay").classList.contains("hidden")) {
@@ -280,7 +316,6 @@ document.getElementById("currentMissionClickableArea").addEventListener("click",
     }
 });
 
-
 // Consolidated chrome.runtime.onMessage.addListener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "showKeysResponse") {
@@ -297,7 +332,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.error("No valid key list found in response.");
     }
   } else if (message.action === "bulkAddResponse") { // New action to handle bulkAdd response
-    console.log("Received bulkAdd response from content script:", message.data);
+        const rawData = message.data.trim().split("\n");
+        console.log("Received Bulkadd response from content script:", rawData);
   } else if (message.action === "getKeyResponse") { // New action to handle getBtn response
         console.log("Received getKey data from content script:", message.data);
 
@@ -526,4 +562,51 @@ function confirmAndDelete() {
             });
         });
     }
+}
+
+// === Bulk Upload Setup ===
+function initBulkUpload() {
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("fileInput");
+  const fileInfo  = document.getElementById("fileInfo");
+  const fileName  = document.getElementById("fileName");
+  const uploadBtn = document.getElementById("sendSecretsBtn");
+
+  const handleFile = (file) => {
+    fileName.textContent = file.name;
+    fileInfo.classList.remove("hidden");
+    uploadBtn.disabled = false;
+  };
+
+  // Click → open file picker
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  // Input selection
+  fileInput.addEventListener("change", e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  // Drag & drop visuals
+  ["dragover", "dragleave", "drop"].forEach(ev =>
+    dropZone.addEventListener(ev, e => e.preventDefault())
+  );
+
+  dropZone.addEventListener("dragover", () =>
+    dropZone.classList.add("border-rio-blue", "bg-blue-50")
+  );
+
+  ["dragleave", "drop"].forEach(ev =>
+    dropZone.addEventListener(ev, () =>
+      dropZone.classList.remove("border-rio-blue", "bg-blue-50")
+    )
+  );
+
+  // Drop handler
+  dropZone.addEventListener("drop", e => {
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!/(\.csv|\.txt)$/i.test(file.name))
+      return alert("Please upload a .csv or .txt file");
+    handleFile(file);
+  });
 }
