@@ -183,9 +183,6 @@ document.getElementById("typeBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
       let domainToSend = document.getElementById("currentSite").textContent;
-      if (domainToSend === "N/A" || domainToSend === "No active tab" || !domainToSend) {
-        domainToSend = "gmail.com"; // Fallback to gmail.com as requested
-      }
       chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToSend}, handleSendMessageResponse);
     });
     window.close(); //need it, otherwise the extension window is focused and the HID inputs are misinterpreted
@@ -241,7 +238,7 @@ document.getElementById("AddCredentialBtn").addEventListener("click", () => {
       (response) => { // Using a direct callback here to manage form clearing specifically
         handleSendMessageResponse(response); // Still use the general handler for error checking
         if (!chrome.runtime.lastError || chrome.runtime.lastError.message === "The message port closed before a response was received.") {
-            // 4 ▸ Limpia el formulario tras éxito or ignored error
+            // Clean the form
             ["singleHostField",
              "singleUsernameField",
              "singlePasswordField",
@@ -316,6 +313,9 @@ document.getElementById("currentMissionClickableArea").addEventListener("click",
     }
 });
 
+///////////////////////////////////////////////////
+// Message listener from content script
+///////////////////////////////////////////////////
 // Consolidated chrome.runtime.onMessage.addListener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "showKeysResponse") {
@@ -394,7 +394,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("Received updateKey response from content script:", rawData);
         // You might want to update the UI further or just confirm success
     }
-    else {``
+    else {
         console.warn("Received action from content script:", message.action);
     }
 });
