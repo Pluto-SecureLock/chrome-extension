@@ -1,5 +1,3 @@
-import { openSerial, commandSerial } from "./background";
-
 let openedPort = null;
 
 //Password suggestion popup
@@ -220,9 +218,9 @@ function showPasswordSuggestionBox(input, position) { //content.js
 
     try {
         if (!openedPort) {
-          openedPort = await openSerial();
+          openedPort = await window.PLUTO.openSerial();
         }
-        generatedPassword = await commandSerial(openedPort, "generatePasswordPluto");
+        generatedPassword = await window.PLUTO.commandSerial(openedPort, "generatePasswordPluto");
     } catch (error) {
           console.error("Error generating password:", error);
           return;
@@ -259,7 +257,7 @@ function handleSignupSubmit(event) {
   (async () => {
       try {
           if (!openedPort) {
-            openedPort = await openSerial();
+            openedPort = await window.PLUTO.openSerial();
             if (!openedPort) {
               sendResponse({ status: "ERROR: Could not open serial port." });
               return; // Exit if port couldn't be opened
@@ -267,7 +265,7 @@ function handleSignupSubmit(event) {
           }
           console.log("Prepared secrets to send to Pluto:", secretsToSend);
           // Send the singleAddPluto command
-          let result = await commandSerial(openedPort, "singleAddPluto","", secretsToSend);
+          let result = await window.PLUTO.commandSerial(openedPort, "singleAddPluto","", secretsToSend);
           console.log("Credential added to Pluto. Result:", result);
           // After successful addition, manually submit the form
           if (result && !result.includes('ERROR')) {
