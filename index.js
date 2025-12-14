@@ -163,10 +163,10 @@ function initDarkMode() {
 
 // Event listener for showKeysBtn
 document.getElementById("showKeysBtn").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, handleSendMessageResponse); 
-    });
+    // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    //   if (!tabs[0]) return;
+      chrome.runtime.sendMessage({ action: "showKeysPluto" }, handleSendMessageResponse); 
+    // });
   }); 
 
 // Event listener for getBtn (This button is now inside credentialDisplay, so it will only be visible after credentials are shown)

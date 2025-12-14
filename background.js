@@ -3,19 +3,20 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //background.js
   (async () => {
     try {
-      let port = window.PLUTO.getPort();
+      let port = self.PLUTO.getPort();
       if (!port) {
-        port = await window.PLUTO.openSerial();
-        window.PLUTO.setPort(port);
+
+        port = await self.PLUTO.openSerial();
+        self.PLUTO.setPort(port);
       }
-      const result = await window.PLUTO.commandSerial(port, message.action, message.domain || "", message.secrets || "", message.username || "", message.password || "");
+      const result = await self.PLUTO.commandSerial(port, message.action, message.domain || "", message.secrets || "", message.username || "", message.password || "");
       sendResponse({ status: "OK", data: result });
     } catch (e) {
       sendResponse({ status: "ERROR: Could not open serial port.", message: e.message });
     }
 
     // Pass message.secrets, message.username, message.password to commandSerial
-    const result = await window.PLUTO.commandSerial(
+    const result = await self.PLUTO.commandSerial(
       openedPort,
       message.action,
       message.domain || "",

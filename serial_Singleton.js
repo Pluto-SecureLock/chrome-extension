@@ -140,5 +140,5 @@
     }
 
     // Bridge-API am globalen Namespace bereitstellen
-    window.PLUTO = { openSerial, commandSerial, getPort: () => _port, setPort: (p) => { _port = p; } };
+    self.PLUTO = { openSerial, commandSerial, getPort: () => _port, setPort: (p) => { _port = p; } };
 })();
