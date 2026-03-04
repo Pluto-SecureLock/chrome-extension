@@ -198,11 +198,11 @@ function setupSignupObserver() { //content.js
         if (node.matches && node.matches('input[type="password"]')) {
           handlePasswordField(node);
         }
-
         // Check for password fields within node
         if (node.querySelectorAll) {
           const inputFields = node.querySelectorAll("input");
           const submitButtons = node.querySelectorAll('button[type="submit"]');
+
           if(submitButtons.length!=0){
           let submitButton = submitButtons[0];
           let submitButtonText = submitButtons[0].textContent
@@ -212,6 +212,7 @@ function setupSignupObserver() { //content.js
           const isSignupButton = signUpArray.some((keyword) =>
             submitButtonText.includes(keyword)
           );
+            console.log("Submit button text:", submitButtonText);
           console.log(
             inputFields,
             inputFields.length,
@@ -236,7 +237,8 @@ function setupSignupObserver() { //content.js
                 submitButton.addEventListener("click", handleSignupSubmit);
             }
           passwordFields.forEach(handlePasswordField); //this might generate different passwords for password and confirm password fields
-        }}}
+          }
+      }}
       });
     });
   });
@@ -276,8 +278,7 @@ function handlePasswordField(input) {//content.js
         generatedPassword = null;
         signUpFormDetected = false;
     }
-  }
-    );
+  });
 }
 
 // init when ready
@@ -407,7 +408,7 @@ function hidePasswordSuggestionBox() {
 }
 
 function handleSignupSubmit(event) {
-
+  event.preventDefault(); // Prevent the default form submission for now
   console.log("Signup button clicked. Capturing data and sending message to background...");
   const formElement = event.target.closest('form');
 
@@ -442,6 +443,7 @@ function handleSignupSubmit(event) {
           if (result && !result.includes('ERROR')) {
               // Remove the event listener to prevent recursion
               event.target.removeEventListener("click", handleSignupSubmit);
+              formElement.submit();
           }
       } catch (error) {
           console.error("Error during SingleAddPluto command:", error);
