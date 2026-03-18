@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let displayHostname = url.hostname;
 
                 // Check for the specific file URL to display example.com
-                if (url.protocol === 'file:' && url.pathname.includes('/pluto-secure/shared-library/login.html')) {
+                if (url.protocol === 'file:' && url.pathname.includes('/login.html')) {
                     displayHostname = "example.com";
                 }
 
