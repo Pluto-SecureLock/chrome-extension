@@ -21,7 +21,8 @@ async function commandSerial( //background.js
   domain = "",
   secrets = "",
   username = "",
-  password = ""
+  password = "",
+  backupCommand = ""
 ) {
   // Add new parameters
   let writer; // Declare writer outside try block to be accessible in finally
@@ -68,6 +69,8 @@ async function commandSerial( //background.js
     } else if (action === "generatePasswordPluto") {
       //password Gen
       command = `passwd len=30,lvl=2\n`;
+    } else if (action === "backupPluto") {
+      command = `${backupCommand.trim()}\n`;
     } else {
       console.error("Unknown action:", action);
       return "ERROR: Unknown action";
@@ -84,7 +87,8 @@ async function commandSerial( //background.js
       action === "updateKeyPluto" ||
       action === "bulkAddPluto" ||
       action === "singleAddPluto" ||
-			action === "deleteKeyPluto"
+			action === "deleteKeyPluto" ||
+      action === "backupPluto"
     ) {
       let receivedData = "";
       while (true) {
@@ -133,7 +137,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
       message.domain || "",
       message.secrets || "",
       message.username || "", // Pass username
-      message.password || "" // Pass password
+      message.password || "", // Pass password
+      message.backupCommand || ""
     );
 
     // Dynamically determine the response action based on the original message action
@@ -149,7 +154,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
     } else if (message.action === "singleAddPluto") {
       responseAction = "singleAddResponse";
     } else if (message.action === "deleteKeyPluto") {
-            responseAction = "deleteKeyResponse";
+      responseAction = "deleteKeyResponse";
+    } else if (message.action === "backupPluto") {
+      responseAction = "backupResponse";
     } else {
       // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
       // we can simply send a success status and return.
