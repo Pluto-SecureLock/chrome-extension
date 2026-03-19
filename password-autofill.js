@@ -70,8 +70,8 @@ function attachFormSubmitHandler(form) {
 
   const passwordFields = form.querySelectorAll('input[type="password"]');
 
-  // Only attach if form has at least one password field
-  if (passwordFields.length > 0) {
+  // Only attach to likely signup forms with password fields.
+  if (passwordFields.length > 0 && isLikelySignupForm(form)) {
     processedForms.add(form);
     form.addEventListener("submit", handleFormSubmit, true);
     console.log("Form submit handler attached. Password fields found:", passwordFields.length);
@@ -119,6 +119,10 @@ function handlePasswordField(input) {
   input.addEventListener("focus", () => {
     console.log("Password field focused. Is confirm field:", isConfirmField);
     currentPasswordField = input;
+
+    if (!isLikelySignupPasswordField(input)) {
+      return;
+    }
 
     const rect = input.getBoundingClientRect();
 
@@ -198,6 +202,64 @@ function findConfirmPasswordField(primaryField) {
 
   // Fallback for sites with generic field names: use the next password field in DOM order.
   return passwordFields[0];
+}
+
+function getFormContextForPasswordField(passwordField) {
+  const form = passwordField.closest("form");
+  const scope = form || document;
+
+  const passwordFields = Array.from(scope.querySelectorAll('input[type="password"]'));
+  const hasConfirmField = passwordFields.some((field) =>
+    isLikelyConfirmPasswordField(field)
+  );
+
+  const formHints = [
+    form?.id || "",
+    form?.className || "",
+    form?.getAttribute("name") || "",
+    form?.getAttribute("action") || "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const buttonHints = Array.from(scope.querySelectorAll('button, input[type="submit"]'))
+    .map((el) => {
+      if (el instanceof HTMLInputElement) {
+        return `${el.value || ""} ${el.getAttribute("aria-label") || ""}`;
+      }
+      return `${el.textContent || ""} ${el.getAttribute("aria-label") || ""}`;
+    })
+    .join(" ")
+    .toLowerCase();
+
+  const signupKeywords = /(sign\s*up|signup|register|create\s*account|join|new\s*account)/i;
+  const loginKeywords = /(log\s*in|login|sign\s*in|signin|forgot\s*password|remember\s*me)/i;
+
+  if (hasConfirmField || signupKeywords.test(formHints) || signupKeywords.test(buttonHints)) {
+    return "signup";
+  }
+
+  if (loginKeywords.test(formHints) || loginKeywords.test(buttonHints)) {
+    return "login";
+  }
+
+  if (passwordFields.length <= 1) {
+    return "login";
+  }
+
+  return "signup";
+}
+
+function isLikelySignupPasswordField(passwordField) {
+  return getFormContextForPasswordField(passwordField) === "signup";
+}
+
+function isLikelySignupForm(form) {
+  const firstPasswordField = form.querySelector('input[type="password"]');
+  if (!firstPasswordField) {
+    return false;
+  }
+  return isLikelySignupPasswordField(firstPasswordField);
 }
 
 async function waitForFieldValue(field, timeoutMs = 3000, intervalMs = 75) {
@@ -448,7 +510,7 @@ async function handleFormSubmit(event) {
 async function handleButtonClick(event) {
   console.log("Submit button clicked");
   const form = event.target.closest("form");
-  if (form) {
+  if (form && isLikelySignupForm(form)) {
     // Check if form has password fields
     const passwordFields = form.querySelectorAll('input[type="password"]');
     if (passwordFields.length > 0) {

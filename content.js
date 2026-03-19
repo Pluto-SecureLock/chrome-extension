@@ -32,10 +32,30 @@ async function commandSerial( //background.js
 
     // focus input field for type commands
     if (action == "typeKeyPluto") {
-      const input = document.querySelector(
-        'input[type="text"], input[type="email"], input[type="password"]'
-      ); // select password field separately for security
-      if (input) input.select();
+      const activeInput =
+        document.activeElement instanceof HTMLInputElement ? document.activeElement : null;
+
+      const isTypeableActiveInput =
+        activeInput &&
+        !activeInput.disabled &&
+        !activeInput.readOnly &&
+        ["text", "email", "password", "search", "tel", "url", ""].includes(
+          (activeInput.type || "").toLowerCase()
+        );
+
+      const input =
+        isTypeableActiveInput
+          ? activeInput
+          : document.querySelector(
+              'input[type="text"], input[type="email"], input[type="password"]'
+            ); // fallback if focus is not on an editable input
+
+      if (input) {
+        input.focus({ preventScroll: true });
+        if (typeof input.select === "function") {
+          input.select();
+        }
+      }
     }
 
     let command = "";
