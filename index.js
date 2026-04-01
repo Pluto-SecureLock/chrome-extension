@@ -4,6 +4,7 @@ let isPasswordVisible = false;
 let isEditMode = false;
 let isBulkMode = true;
 let isMenuOpen = false;
+let selectedBulkFile = null;
 
 // Helper function to handle sendMessage responses, ignoring specific errors
 function handleSendMessageResponse(response) {
@@ -190,7 +191,7 @@ document.getElementById("typeBtn").addEventListener("click", () => {
 
 // Event listener for bulkAddBtn (Send Secrets)
 document.getElementById("sendSecretsBtn").addEventListener("click", async () => {
-  const file = document.getElementById("fileInput").files[0];
+  const file = selectedBulkFile || document.getElementById("fileInput").files[0];
   if (!file) return alert("Select a .csv or .txt file first.");
 
   const text = await file.text();
@@ -202,6 +203,7 @@ document.getElementById("sendSecretsBtn").addEventListener("click", async () => 
       if (chrome.runtime.lastError) return alert("Error: " + chrome.runtime.lastError.message);
       alert("✅ Secrets sent!");
       document.getElementById("fileInput").value = "";
+      selectedBulkFile = null;
       document.getElementById("fileInfo").classList.add("hidden");
       document.getElementById("fileName").textContent = "";
       document.getElementById("sendSecretsBtn").disabled = true;
@@ -573,6 +575,7 @@ function initBulkUpload() {
   const uploadBtn = document.getElementById("sendSecretsBtn");
 
   const handleFile = (file) => {
+    selectedBulkFile = file;
     fileName.textContent = file.name;
     fileInfo.classList.remove("hidden");
     uploadBtn.disabled = false;
@@ -583,7 +586,22 @@ function initBulkUpload() {
 
   // Input selection
   fileInput.addEventListener("change", e => {
-    if (e.target.files.length) handleFile(e.target.files[0]);
+    if (!e.target.files.length) {
+      selectedBulkFile = null;
+      return;
+    }
+
+    const file = e.target.files[0];
+    if (!/(\.csv|\.txt)$/i.test(file.name)) {
+      selectedBulkFile = null;
+      fileInput.value = "";
+      fileInfo.classList.add("hidden");
+      fileName.textContent = "";
+      uploadBtn.disabled = true;
+      return alert("Please upload a .csv or .txt file");
+    }
+
+    handleFile(file);
   });
 
   // Drag & drop visuals
