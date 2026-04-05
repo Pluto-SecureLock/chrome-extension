@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize bulk upload functionality
     initBulkUpload();
 
+    // Initialize send form functionality
+    initSendSection();
+
     // Initialize dark mode toggle
     initDarkMode();
 
@@ -329,6 +332,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (listLine) {
       keys = JSON.parse(listLine.replace(/'/g, '"'));  // Update global keys
       updateKeyList(keys);
+      revealSendVaultPicker();
       document.getElementById("showKeysBtn").classList.add('hidden');
     } else {
       console.error("No valid key list found in response.");
@@ -405,6 +409,42 @@ const searchInput = document.getElementById('searchInput');
 const suggestionsList = document.getElementById('suggestions');
 let keys = [];  // global keys list
 
+function refreshSendSecretOptions() {
+  const sendSecretField = document.getElementById('sendSecretField');
+  const sendSecretSearch = document.getElementById('sendSecretSearch');
+  if (!sendSecretField) return;
+
+  const currentValue = sendSecretField.value;
+  const query = (sendSecretSearch?.value || '').toLowerCase().trim();
+  sendSecretField.innerHTML = '<option value="">Choose a secret</option>';
+
+  keys.forEach(key => {
+    if (query && !key.toLowerCase().includes(query)) {
+      return;
+    }
+
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = key;
+    sendSecretField.appendChild(option);
+  });
+
+  if (currentValue && keys.includes(currentValue)) {
+    sendSecretField.value = currentValue;
+  }
+}
+
+function revealSendVaultPicker() {
+  const retrieveVaultBtn = document.getElementById('retrieveVaultBtn');
+  const sendVaultSearchArea = document.getElementById('sendVaultSearchArea');
+
+  if (!retrieveVaultBtn || !sendVaultSearchArea) return;
+
+  retrieveVaultBtn.classList.add('hidden');
+  sendVaultSearchArea.classList.remove('hidden');
+  refreshSendSecretOptions();
+}
+
 
 searchInput.addEventListener('input', () => {
   const query = searchInput.value.toLowerCase().trim();
@@ -428,6 +468,7 @@ searchInput.addEventListener('input', () => {
  */
 function updateKeyList(newKeys) {
   keys = newKeys; // Update the global keys list
+  refreshSendSecretOptions();
   const keyCardsContainer = document.getElementById('keyCardsContainer');
   keyCardsContainer.innerHTML = ''; // Clear existing cards
 
@@ -469,6 +510,7 @@ function updateKeyList(newKeys) {
         });
     });
 
+
     // Event listener for the copy button (typekey action)
     const copyButton = cardDiv.querySelector('.type-button');
     copyButton.addEventListener('click', (event) => {
@@ -481,6 +523,58 @@ function updateKeyList(newKeys) {
         });
         window.close(); // Close the extension window after typing
     });
+  });
+}
+
+function initSendSection() {
+  const retrieveVaultBtn = document.getElementById('retrieveVaultBtn');
+  const sendSecretBtn = document.getElementById('sendSecretBtn');
+  const sendSecretField = document.getElementById('sendSecretField');
+  const sendSecretSearch = document.getElementById('sendSecretSearch');
+  const sendNotesField = document.getElementById('sendNotesField');
+  const sendToField = document.getElementById('sendToField');
+  const sendExpiryField = document.getElementById('sendExpiryField');
+  const sendUsesField = document.getElementById('sendUsesField');
+
+  if (!retrieveVaultBtn || !sendSecretBtn || !sendSecretField || !sendSecretSearch || !sendNotesField || !sendToField || !sendExpiryField || !sendUsesField) {
+    return;
+  }
+
+  refreshSendSecretOptions();
+
+  retrieveVaultBtn.addEventListener('click', () => {
+    document.getElementById('showKeysBtn').click();
+  });
+
+  sendSecretSearch.addEventListener('input', () => {
+    refreshSendSecretOptions();
+  });
+
+  sendSecretBtn.addEventListener('click', () => {
+    const selectedSecret = sendSecretField.value;
+    const notes = sendNotesField.value.trim();
+
+    const payload = {
+      sourceType: selectedSecret ? 'vault' : 'notes',
+      secret: selectedSecret,
+      notes,
+      recipient: sendToField.value.trim(),
+      expiry: sendExpiryField.value,
+      uses: sendUsesField.value,
+    };
+
+    if (!payload.recipient) {
+      alert('Please enter who to send it to.');
+      return;
+    }
+
+    if (!payload.secret && !payload.notes) {
+      alert('Please choose a vault secret or add notes to share.');
+      return;
+    }
+
+    console.log('Send secret payload:', payload);
+    alert('Send request captured. Wire this button to your send flow next.');
   });
 }
 
