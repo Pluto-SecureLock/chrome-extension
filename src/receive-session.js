@@ -20,30 +20,45 @@
       this.waitTimer = null;
       this.cache = {
         publicKey: null,
+        publicKeyEndpoint: null,
         secret: null,
       };
     }
 
-    async start(sessionToken) {
-      if (!sessionToken || !sessionToken.trim()) {
-        throw new Error("Session token is required.");
+    async start(receiverContext) {
+      if (!receiverContext || typeof receiverContext !== "object") {
+        throw new Error("Receiver context is required.");
       }
 
       if (this.state !== "idle") {
         throw new Error("Receive session is already running.");
       }
 
-      const token = sessionToken.trim();
+      const plutoTagId = (receiverContext.plutoTagId || "").trim();
+      const receiverUserId = (receiverContext.receiverUserId || "").trim();
+      const receiverDeviceId = (receiverContext.receiverDeviceId || "").trim();
+      const receiverPublicKey = (receiverContext.receiverPublicKey || "").trim();
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const expiresAt = Number(receiverContext.expiresAt) || nowSeconds + 900;
+
+      if (!plutoTagId || !receiverUserId || !receiverDeviceId || !receiverPublicKey) {
+        throw new Error("Receiver tag, user, device, and public key are required.");
+      }
 
       try {
         this.#setState("create-session", "Creating receive session...");
-        await this.#openWebSocket(token);
+        const sessionPayload = await this.#registerWaitingSession({
+          plutoTagId,
+          receiverUserId,
+          receiverDeviceId,
+          receiverPublicKey,
+          expiresAt,
+        });
 
-        const publicKeyPayload = await this.#getPublicKey(token);
-        const publicKeyValue = this.#extractPublicKey(publicKeyPayload);
-        this.cache.publicKey = publicKeyValue;
+        this.cache.publicKey = receiverPublicKey;
+        this.cache.publicKeyEndpoint = this.#buildPublicKeyEndpoint(plutoTagId);
 
-        await this.#postKey(token, publicKeyValue);
+        await this.#openWebSocket(receiverDeviceId);
 
         this.#setState("listening", "Listening for key/secret events...");
         const secretPayload = await this.#waitForSecret();
@@ -51,11 +66,13 @@
         this.onSecret(secretPayload);
 
         this.#setState("acknowledge", "Acknowledging received secret...");
-        const ackPayload = await this.#postSecret(token, secretPayload);
+        const ackPayload = await this.#acknowledgeSecret(secretPayload.msgId, receiverDeviceId);
 
         this.#setState("completed", "Secret received and acknowledged.");
         return {
+          session: sessionPayload,
           publicKey: this.cache.publicKey,
+          publicKeyEndpoint: this.cache.publicKeyEndpoint,
           secret: this.cache.secret,
           acknowledgement: ackPayload,
         };
@@ -83,6 +100,7 @@
 
       this.ws = null;
       this.cache.publicKey = null;
+      this.cache.publicKeyEndpoint = null;
       this.cache.secret = null;
 
       if (this.state !== "idle") {
@@ -95,8 +113,26 @@
       this.onStatus(statusMessage);
     }
 
-    async #openWebSocket(token) {
-      const wsUrl = this.#buildWsUrl(token);
+    async #registerWaitingSession(payload) {
+      this.#setState("publishing-public-key", "Registering waiting receiver session...");
+      return await this.#requestJson("/v1/kdc/sessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pluto_tag_id: payload.plutoTagId,
+          receiver_user_id: payload.receiverUserId,
+          receiver_device_id: payload.receiverDeviceId,
+          receiver_public_key: payload.receiverPublicKey,
+          expires_at: payload.expiresAt,
+        }),
+      });
+    }
+
+    async #openWebSocket(receiverDeviceId) {
+      const wsUrl = this.#buildWsUrl(receiverDeviceId);
+      this.onStatus(`Connecting WebSocket: ${wsUrl}`);
 
       await new Promise((resolve, reject) => {
         let settled = false;
@@ -119,7 +155,7 @@
           if (settled) return;
           settled = true;
           cleanup();
-          reject(new Error("Could not open WebSocket session."));
+          reject(new Error(`WebSocket open failed for ${wsUrl}`));
         };
 
         ws.addEventListener("open", handleOpen);
@@ -149,12 +185,7 @@
         const onMessage = (event) => {
           const payload = this.#safeParseJson(event.data);
 
-          if (this.#isKeyReadyEvent(payload)) {
-            this.onStatus("Session key populated. Waiting for secret...");
-            return;
-          }
-
-          if (this.#isSecretEvent(payload)) {
+          if (this.#isEnvelopeEvent(payload)) {
             cleanup();
             resolve(this.#extractSecret(payload));
           }
@@ -181,40 +212,6 @@
       });
     }
 
-    async #getPublicKey(token) {
-      const query = new URLSearchParams({ token });
-      return await this.#requestJson(`/publickey?${query.toString()}`, {
-        method: "GET",
-      });
-    }
-
-    async #postKey(token, publicKey) {
-      return await this.#requestJson("/key", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          publicKey,
-        }),
-      });
-    }
-
-    async #postSecret(token, secretPayload) {
-      return await this.#requestJson("/secret", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          secret: secretPayload,
-          acknowledgedAt: new Date().toISOString(),
-        }),
-      });
-    }
-
     async #requestJson(path, options) {
       const response = await this.fetchImpl(`${this.httpBaseUrl}${path}`, options);
 
@@ -231,9 +228,32 @@
       return text ? this.#safeParseJson(text) : {};
     }
 
-    #buildWsUrl(token) {
-      const query = new URLSearchParams({ token });
-      return `${this.wsBaseUrl}/ws/receive?${query.toString()}`;
+    #buildPublicKeyEndpoint(plutoTagId) {
+      return `${this.httpBaseUrl}/v1/kdc/pubkey/${encodeURIComponent(plutoTagId)}`;
+    }
+
+    async #acknowledgeSecret(msgId, receiverDeviceId) {
+      if (!msgId) {
+        return { status: "missing-msg-id" };
+      }
+
+      if (this.ws && this.ws.readyState === this.WebSocketCtor.OPEN) {
+        this.ws.send(JSON.stringify({ ack: msgId }));
+        return { status: "acked-over-ws", msgId };
+      }
+
+      return await this.#requestJson(`/v1/messages/${encodeURIComponent(msgId)}/ack`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ device_id: receiverDeviceId }),
+      });
+    }
+
+    #buildWsUrl(receiverDeviceId) {
+      const encodedReceiverDeviceId = encodeURIComponent(receiverDeviceId);
+      return `${this.wsBaseUrl}/v1/ws/${encodedReceiverDeviceId}`;
     }
 
     #safeParseJson(raw) {
@@ -256,29 +276,8 @@
       }
     }
 
-    #extractPublicKey(payload) {
-      if (!payload || typeof payload !== "object") {
-        throw new Error("Invalid response from /publickey.");
-      }
-
-      const key = payload.publicKey || payload.key || payload.data;
-      if (!key) {
-        throw new Error("Public key was not found in /publickey response.");
-      }
-
-      return key;
-    }
-
-    #isKeyReadyEvent(payload) {
-      const type = (payload && payload.type) || "";
-      const endpoint = (payload && payload.endpoint) || "";
-      return type === "key_populated" || type === "key_ready" || endpoint === "/key";
-    }
-
-    #isSecretEvent(payload) {
-      const type = (payload && payload.type) || "";
-      const endpoint = (payload && payload.endpoint) || "";
-      return type === "secret" || type === "secret_received" || endpoint === "/secret";
+    #isEnvelopeEvent(payload) {
+      return !!(payload && payload.type === "Envelope" && payload.data && payload.data.header);
     }
 
     #extractSecret(payload) {
@@ -286,15 +285,23 @@
         throw new Error("Invalid secret payload received from WebSocket.");
       }
 
-      if (payload.secret != null) {
-        return payload.secret;
+      if (payload.type === "Envelope" && payload.data && payload.data.header) {
+        return {
+          msgId: payload.data.header.msg_id,
+          fromUser: payload.data.header.from_user,
+          fromDevice: payload.data.header.from_device,
+          toUser: payload.data.header.to_user,
+          toDevice: payload.data.header.to_device,
+          contentType: payload.data.header.content_type,
+          wrappedSymmetricKey: payload.data.eph_pub,
+          nonce: payload.data.nonce,
+          ciphertext: payload.data.ciphertext,
+          sig: payload.data.sig,
+          raw: payload,
+        };
       }
 
-      if (payload.data != null) {
-        return payload.data;
-      }
-
-      return payload;
+      throw new Error("Unsupported websocket payload shape.");
     }
   }
 

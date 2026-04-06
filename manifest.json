@@ -5,7 +5,7 @@
   "description": "Pluto Extension Helper Extension",
   "author": "Giorgi Japaridze",
   "background": {
-  "service_worker": "background.js"
+  "service_worker": "src/background.js"
 },
   "action": {
     "default_popup": "index.html",
@@ -20,7 +20,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js", "login-autofill.js", "password-autofill.js"]
+      "js": ["src/content.js", "src/login-autofill.js", "src/password-autofill.js"]
 
     }],
 
