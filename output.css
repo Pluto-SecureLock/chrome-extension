@@ -286,6 +286,9 @@
   .hidden {
     display: none;
   }
+  .h-3 {
+    height: calc(var(--spacing) * 3);
+  }
   .h-4 {
     height: calc(var(--spacing) * 4);
   }
@@ -307,8 +310,14 @@
   .h-24 {
     height: calc(var(--spacing) * 24);
   }
+  .h-28 {
+    height: calc(var(--spacing) * 28);
+  }
   .h-48 {
     height: calc(var(--spacing) * 48);
+  }
+  .w-3 {
+    width: calc(var(--spacing) * 3);
   }
   .w-4 {
     width: calc(var(--spacing) * 4);
@@ -382,11 +391,21 @@
   .justify-center {
     justify-content: center;
   }
+  .gap-1 {
+    gap: calc(var(--spacing) * 1);
+  }
   .gap-2 {
     gap: calc(var(--spacing) * 2);
   }
   .gap-4 {
     gap: calc(var(--spacing) * 4);
+  }
+  .space-y-2 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 2) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 2) * calc(1 - var(--tw-space-y-reverse)));
+    }
   }
   .space-x-2 {
     :where(& > :not(:last-child)) {
@@ -402,6 +421,9 @@
       margin-inline-end: calc(calc(var(--spacing) * 3) * calc(1 - var(--tw-space-x-reverse)));
     }
   }
+  .self-start {
+    align-self: flex-start;
+  }
   .overflow-hidden {
     overflow: hidden;
   }
@@ -410,6 +432,9 @@
   }
   .rounded {
     border-radius: 0.25rem;
+  }
+  .rounded-2xl {
+    border-radius: var(--radius-2xl);
   }
   .rounded-full {
     border-radius: calc(infinity * 1px);
@@ -442,6 +467,10 @@
   .border-t {
     border-top-style: var(--tw-border-style);
     border-top-width: 1px;
+  }
+  .border-r {
+    border-right-style: var(--tw-border-style);
+    border-right-width: 1px;
   }
   .border-b {
     border-bottom-style: var(--tw-border-style);
@@ -520,6 +549,9 @@
   }
   .text-left {
     text-align: left;
+  }
+  .text-right {
+    text-align: right;
   }
   .text-lg {
     font-size: var(--text-lg);
@@ -711,6 +743,13 @@
       }
     }
   }
+  .hover\:opacity-80 {
+    &:hover {
+      @media (hover: hover) {
+        opacity: 80%;
+      }
+    }
+  }
   .hover\:opacity-100 {
     &:hover {
       @media (hover: hover) {
@@ -776,6 +815,9 @@ body {
 }
 .bg-rio-blue {
   background-color: #054FF0;
+}
+.border-rio-blue {
+  border-color: #054FF0;
 }
 .bg-mindaro {
   background-color: #DCFC73;
@@ -898,6 +940,10 @@ input:focus {
 .custom-tab-panel {
   border-top: none;
   border-radius: 0 0 1.5rem 1.5rem;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
+}
+.send-panel {
+  border-radius: 1rem;
   box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
 }
 #dropZone {
@@ -1091,6 +1137,42 @@ body.darkmode {
 .darkmode #addView #AddCredentialBtn:hover, .darkmode #addView #sendSecretsBtn:hover {
   box-shadow: 0 0 10px rgba(5,79,240,0.5);
 }
+.darkmode #sendView {
+  background-color: #121212;
+  color: #f1f5f9;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.darkmode #sendView .send-panel {
+  background-color: #1a1a1a;
+  border: 1px solid #2f2f2f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.darkmode #sendView input, .darkmode #sendView textarea, .darkmode #sendView select {
+  background-color: #1e1e1e;
+  color: #f1f5f9;
+  border-color: #333;
+}
+.darkmode #sendView input::placeholder, .darkmode #sendView textarea::placeholder {
+  color: #9ca3af;
+}
+.darkmode #sendView #retrieveVaultBtn {
+  background-color: #1e1e1e;
+  color: #7fa9ff;
+  border-color: #3b82f6;
+}
+.darkmode #sendView #retrieveVaultBtn:hover {
+  background-color: #222;
+}
+.darkmode #sendView #sendSecretBtn {
+  background-color: #054FF0;
+  border: none;
+}
+.darkmode #sendView #sendSecretBtn:hover {
+  box-shadow: 0 0 10px rgba(5,79,240,0.5);
+}
+.darkmode #sendView #sendNotesCounter {
+  color: #9ca3af;
+}
 .darkmode #bottomNavBar .tab-button {
   background-color: transparent;
   color: #d1d5db;
@@ -1139,6 +1221,11 @@ body.darkmode {
 @property --tw-skew-y {
   syntax: "*";
   inherits: false;
+}
+@property --tw-space-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
 }
 @property --tw-space-x-reverse {
   syntax: "*";
@@ -1303,6 +1390,7 @@ body.darkmode {
       --tw-rotate-z: initial;
       --tw-skew-x: initial;
       --tw-skew-y: initial;
+      --tw-space-y-reverse: 0;
       --tw-space-x-reverse: 0;
       --tw-border-style: solid;
       --tw-font-weight: initial;

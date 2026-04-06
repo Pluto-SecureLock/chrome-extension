@@ -22,6 +22,9 @@ body {
 .bg-rio-blue {
     background-color: #054FF0;
 }
+.border-rio-blue {
+    border-color: #054FF0;
+}
 .bg-mindaro {
     background-color: #DCFC73;
 }
@@ -149,6 +152,12 @@ input:focus {
   border-top: none;
   border-radius: 0 0 1.5rem 1.5rem;
   box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
+}
+
+/* Shared panel shape for Send view (theme colors handled elsewhere). */
+.send-panel {
+    border-radius: 1rem;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
 }
 
 /* === Drag & Drop Zone === */

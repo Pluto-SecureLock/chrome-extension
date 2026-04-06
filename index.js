@@ -5,6 +5,37 @@ let isEditMode = false;
 let isBulkMode = true;
 let isMenuOpen = false;
 let selectedBulkFile = null;
+let activeReceiveSession = null;
+
+function getPreferredReceiveEndpoints() {
+  const defaultHttp = 'https://127.0.0.1:8080';
+  const defaultWs = 'wss://127.0.0.1:8080';
+
+  return {
+    httpBaseUrl: (localStorage.getItem('receive_http_base_url') || defaultHttp).replace(/\/$/, ''),
+    wsBaseUrl: (localStorage.getItem('receive_ws_base_url') || defaultWs).replace(/\/$/, ''),
+  };
+}
+
+function toInsecureEndpoints(endpoints) {
+  return {
+    httpBaseUrl: endpoints.httpBaseUrl.replace(/^https:/i, 'http:'),
+    wsBaseUrl: endpoints.wsBaseUrl.replace(/^wss:/i, 'ws:'),
+  };
+}
+
+function canFallbackToInsecure(endpoints) {
+  return /^https:/i.test(endpoints.httpBaseUrl) || /^wss:/i.test(endpoints.wsBaseUrl);
+}
+
+function buildReceiveShareUrl(httpBaseUrl, token) {
+  const encodedToken = encodeURIComponent(token);
+  return `${httpBaseUrl}/secret?token=${encodedToken}`;
+}
+
+// TODO: Remove this mock toggle when device integration is available again.
+const ENABLE_MOCK_VAULT_RESPONSE = true;
+const SEND_NOTES_MAX_LENGTH = 60;
 
 // Helper function to handle sendMessage responses, ignoring specific errors
 function handleSendMessageResponse(response) {
@@ -75,6 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             document.getElementById(`${targetTab}View`).classList.remove('hidden');
+
+            if (targetTab === 'send') {
+              resetWhisperModeSelection();
+            }
         });
     });
 
@@ -411,18 +446,12 @@ let keys = [];  // global keys list
 
 function refreshSendSecretOptions() {
   const sendSecretField = document.getElementById('sendSecretField');
-  const sendSecretSearch = document.getElementById('sendSecretSearch');
   if (!sendSecretField) return;
 
   const currentValue = sendSecretField.value;
-  const query = (sendSecretSearch?.value || '').toLowerCase().trim();
   sendSecretField.innerHTML = '<option value="">Choose a secret</option>';
 
   keys.forEach(key => {
-    if (query && !key.toLowerCase().includes(query)) {
-      return;
-    }
-
     const option = document.createElement('option');
     option.value = key;
     option.textContent = key;
@@ -530,24 +559,216 @@ function initSendSection() {
   const retrieveVaultBtn = document.getElementById('retrieveVaultBtn');
   const sendSecretBtn = document.getElementById('sendSecretBtn');
   const sendSecretField = document.getElementById('sendSecretField');
-  const sendSecretSearch = document.getElementById('sendSecretSearch');
   const sendNotesField = document.getElementById('sendNotesField');
+  const sendNotesCounter = document.getElementById('sendNotesCounter');
   const sendToField = document.getElementById('sendToField');
   const sendExpiryField = document.getElementById('sendExpiryField');
   const sendUsesField = document.getElementById('sendUsesField');
+  const tabWhisperSend = document.getElementById('tabWhisperSend');
+  const tabWhisperReceive = document.getElementById('tabWhisperReceive');
+  const whisperTitle = document.getElementById('whisperTitle');
+  const whisperBackBtn = document.getElementById('whisperBackBtn');
+  const whisperModeSelector = document.getElementById('whisperModeSelector');
+  const whisperSendContainer = document.getElementById('whisperSendContainer');
+  const whisperReceiveContainer = document.getElementById('whisperReceiveContainer');
+  const whisperModeHint = document.getElementById('whisperModeHint');
+  const receiveSecretBtn = document.getElementById('receiveSecretBtn');
+  const receiveTokenField = document.getElementById('receiveTokenField');
+  const receiveEndpointInfo = document.getElementById('receiveEndpointInfo');
+  const receiveListeningIndicator = document.getElementById('receiveListeningIndicator');
+  const receiveShareUrlRow = document.getElementById('receiveShareUrlRow');
+  const receiveShareUrlField = document.getElementById('receiveShareUrlField');
+  const copyReceiveShareUrlBtn = document.getElementById('copyReceiveShareUrlBtn');
+  const receiveSuccessIndicator = document.getElementById('receiveSuccessIndicator');
+  const receiveResult = document.getElementById('receiveResult');
 
-  if (!retrieveVaultBtn || !sendSecretBtn || !sendSecretField || !sendSecretSearch || !sendNotesField || !sendToField || !sendExpiryField || !sendUsesField) {
+  if (!retrieveVaultBtn || !sendSecretBtn || !sendSecretField || !sendNotesField || !sendNotesCounter || !sendToField || !sendExpiryField || !sendUsesField || !tabWhisperSend || !tabWhisperReceive || !whisperTitle || !whisperBackBtn || !whisperModeSelector || !whisperSendContainer || !whisperReceiveContainer || !whisperModeHint || !receiveSecretBtn || !receiveTokenField || !receiveEndpointInfo || !receiveListeningIndicator || !receiveShareUrlRow || !receiveShareUrlField || !copyReceiveShareUrlBtn || !receiveSuccessIndicator || !receiveResult) {
     return;
   }
 
-  refreshSendSecretOptions();
+  copyReceiveShareUrlBtn.addEventListener('click', async () => {
+    const value = receiveShareUrlField.value.trim();
+    if (!value) return;
 
-  retrieveVaultBtn.addEventListener('click', () => {
-    document.getElementById('showKeysBtn').click();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        receiveShareUrlField.select();
+        document.execCommand('copy');
+      }
+      copyReceiveShareUrlBtn.textContent = 'Copied';
+      setTimeout(() => {
+        copyReceiveShareUrlBtn.textContent = 'Copy';
+      }, 1200);
+    } catch (e) {
+      console.error('Could not copy receive URL:', e);
+      copyReceiveShareUrlBtn.textContent = 'Error';
+      setTimeout(() => {
+        copyReceiveShareUrlBtn.textContent = 'Copy';
+      }, 1200);
+    }
   });
 
-  sendSecretSearch.addEventListener('input', () => {
-    refreshSendSecretOptions();
+  const setWhisperMode = (mode) => {
+    const isSend = mode === 'send';
+
+    tabWhisperSend.classList.toggle('custom-tab-active', isSend);
+    tabWhisperSend.classList.toggle('font-extrabold', isSend);
+
+    tabWhisperReceive.classList.toggle('custom-tab-active', !isSend);
+    tabWhisperReceive.classList.toggle('font-extrabold', !isSend);
+
+    whisperSendContainer.classList.toggle('hidden', !isSend);
+    whisperReceiveContainer.classList.toggle('hidden', isSend);
+    whisperTitle.textContent = isSend ? 'Send a Secret' : 'Receive a Secret';
+    whisperBackBtn.classList.remove('hidden');
+    whisperModeHint.classList.add('hidden');
+    whisperModeSelector.classList.add('hidden');
+
+    if (!isSend) {
+      const endpoints = getPreferredReceiveEndpoints();
+      receiveEndpointInfo.textContent = `WS: ${endpoints.wsBaseUrl} | API: ${endpoints.httpBaseUrl}`;
+      receiveResult.classList.add('hidden');
+      receiveResult.textContent = '';
+      receiveListeningIndicator.classList.add('hidden');
+      receiveShareUrlRow.classList.add('hidden');
+      receiveShareUrlField.value = '';
+      receiveSuccessIndicator.classList.add('hidden');
+      receiveSecretBtn.textContent = 'Create Session';
+    }
+  };
+
+  tabWhisperSend.addEventListener('click', () => setWhisperMode('send'));
+  tabWhisperReceive.addEventListener('click', () => setWhisperMode('receive'));
+  whisperBackBtn.addEventListener('click', () => {
+    if (activeReceiveSession) {
+      activeReceiveSession.stop('user-back');
+      activeReceiveSession = null;
+    }
+    resetWhisperModeSelection();
+  });
+
+  receiveSecretBtn.addEventListener('click', async () => {
+    const token = receiveTokenField.value.trim();
+    if (!token) {
+      alert('Please add a token or code to receive a secret.');
+      return;
+    }
+
+    if (!window.ReceiveSessionManager) {
+      receiveResult.textContent = 'Receive engine not loaded.';
+      receiveResult.classList.remove('hidden');
+      return;
+    }
+
+    if (activeReceiveSession) {
+      activeReceiveSession.stop('restart');
+      activeReceiveSession = null;
+    }
+
+    receiveSecretBtn.disabled = true;
+    receiveResult.classList.remove('hidden');
+    receiveListeningIndicator.classList.add('hidden');
+    receiveShareUrlRow.classList.add('hidden');
+    receiveShareUrlField.value = '';
+    receiveSuccessIndicator.classList.add('hidden');
+    receiveSecretBtn.textContent = 'Creating Session...';
+
+    const startWithEndpoints = async (endpoints) => {
+      receiveEndpointInfo.textContent = `WS: ${endpoints.wsBaseUrl} | API: ${endpoints.httpBaseUrl}`;
+      activeReceiveSession = new window.ReceiveSessionManager({
+        httpBaseUrl: endpoints.httpBaseUrl,
+        wsBaseUrl: endpoints.wsBaseUrl,
+        onStatus: (message) => {
+          receiveResult.textContent = message;
+
+          const lower = message.toLowerCase();
+          const isListeningStage = lower.includes('listening') || lower.includes('waiting') || lower.includes('key populated');
+          receiveListeningIndicator.classList.toggle('hidden', !isListeningStage);
+
+          if (isListeningStage) {
+            receiveSecretBtn.textContent = 'Session Active';
+            receiveShareUrlField.value = buildReceiveShareUrl(endpoints.httpBaseUrl, token);
+            receiveShareUrlRow.classList.remove('hidden');
+          }
+        },
+        onSecret: (secret) => {
+          console.log('Received secret payload:', secret);
+        },
+      });
+
+      return await activeReceiveSession.start(token);
+    };
+
+    const preferredEndpoints = getPreferredReceiveEndpoints();
+
+    try {
+      await startWithEndpoints(preferredEndpoints);
+      receiveListeningIndicator.classList.add('hidden');
+      receiveShareUrlRow.classList.add('hidden');
+      receiveSuccessIndicator.classList.remove('hidden');
+      receiveResult.textContent = 'Secret received, acknowledged, and session cleaned up.';
+    } catch (error) {
+      if (canFallbackToInsecure(preferredEndpoints)) {
+        try {
+          receiveResult.textContent = 'Secure endpoint failed. Retrying with insecure endpoint...';
+          receiveSecretBtn.textContent = 'Retrying Session...';
+          await startWithEndpoints(toInsecureEndpoints(preferredEndpoints));
+          receiveListeningIndicator.classList.add('hidden');
+          receiveShareUrlRow.classList.add('hidden');
+          receiveSuccessIndicator.classList.remove('hidden');
+          receiveResult.textContent = 'Secret received via insecure endpoint, acknowledged, and session cleaned up.';
+        } catch (fallbackError) {
+          receiveListeningIndicator.classList.add('hidden');
+          receiveShareUrlRow.classList.add('hidden');
+          receiveSuccessIndicator.classList.add('hidden');
+          receiveResult.textContent = `Receive flow failed: ${fallbackError.message}`;
+          console.error('Receive session failed (secure + fallback):', fallbackError);
+        }
+      } else {
+        receiveListeningIndicator.classList.add('hidden');
+        receiveShareUrlRow.classList.add('hidden');
+        receiveSuccessIndicator.classList.add('hidden');
+        receiveResult.textContent = `Receive flow failed: ${error.message}`;
+        console.error('Receive session failed:', error);
+      }
+    } finally {
+      receiveSecretBtn.disabled = false;
+      receiveSecretBtn.textContent = 'Create Session';
+      activeReceiveSession = null;
+    }
+  });
+
+  refreshSendSecretOptions();
+
+  // Keep the notes length limit controlled from a single constant.
+  sendNotesField.maxLength = SEND_NOTES_MAX_LENGTH;
+
+  const updateNotesCounter = () => {
+    sendNotesCounter.textContent = `${sendNotesField.value.length}/${SEND_NOTES_MAX_LENGTH}`;
+  };
+  updateNotesCounter();
+  sendNotesField.addEventListener('input', updateNotesCounter);
+
+  retrieveVaultBtn.addEventListener('click', () => {
+    //----------------------------------------------------------
+    // TODO: Remove mock branch and keep only real showKeys flow.
+    if (ENABLE_MOCK_VAULT_RESPONSE) {
+      const mockKeys = [
+        'github.com',
+        'gmail.com',
+        'notion.so',
+        'amazon.com',
+        'linkedin.com'
+      ];
+      keys = mockKeys;
+      updateKeyList(mockKeys);
+      revealSendVaultPicker();
+      return;
+    }
+    // -----------------------------------------------------------
+    document.getElementById('showKeysBtn').click();
   });
 
   sendSecretBtn.addEventListener('click', () => {
@@ -568,6 +789,11 @@ function initSendSection() {
       return;
     }
 
+    if (payload.notes.length > SEND_NOTES_MAX_LENGTH) {
+      alert(`Notes must be ${SEND_NOTES_MAX_LENGTH} characters or fewer.`);
+      return;
+    }
+
     if (!payload.secret && !payload.notes) {
       alert('Please choose a vault secret or add notes to share.');
       return;
@@ -576,6 +802,35 @@ function initSendSection() {
     console.log('Send secret payload:', payload);
     alert('Send request captured. Wire this button to your send flow next.');
   });
+}
+
+function resetWhisperModeSelection() {
+  const tabWhisperSend = document.getElementById('tabWhisperSend');
+  const tabWhisperReceive = document.getElementById('tabWhisperReceive');
+  const whisperTitle = document.getElementById('whisperTitle');
+  const whisperBackBtn = document.getElementById('whisperBackBtn');
+  const whisperModeSelector = document.getElementById('whisperModeSelector');
+  const whisperSendContainer = document.getElementById('whisperSendContainer');
+  const whisperReceiveContainer = document.getElementById('whisperReceiveContainer');
+  const whisperModeHint = document.getElementById('whisperModeHint');
+
+  if (!tabWhisperSend || !tabWhisperReceive || !whisperTitle || !whisperBackBtn || !whisperModeSelector || !whisperSendContainer || !whisperReceiveContainer || !whisperModeHint) {
+    return;
+  }
+
+  tabWhisperSend.classList.remove('custom-tab-active', 'bg-white', 'border-b-4', 'border-rio-blue');
+  tabWhisperReceive.classList.remove('custom-tab-active', 'bg-white', 'border-b-4', 'border-rio-blue');
+  tabWhisperSend.classList.add('text-rio-blue');
+  tabWhisperReceive.classList.add('text-rio-blue');
+  tabWhisperSend.classList.remove('font-extrabold');
+  tabWhisperReceive.classList.remove('font-extrabold');
+
+  whisperSendContainer.classList.add('hidden');
+  whisperReceiveContainer.classList.add('hidden');
+  whisperTitle.textContent = 'Whispers';
+  whisperBackBtn.classList.add('hidden');
+  whisperModeSelector.classList.remove('hidden');
+  whisperModeHint.classList.remove('hidden');
 }
 
 function enterEditMode() {
