@@ -82,8 +82,16 @@ async function commandSerial( //background.js
     } else if (action === "samePasswordPluto") {
       //password Gen
       command = `passwd --same\n`;
-    }
-     else {
+    } else if (action === "x25519GenPluto") {
+      // Key exchange and secure end-to-end communication
+      command = "x25519_gen\n";
+    } else if (action === "idPubPluto") {
+      // Get public identity key for authentication
+      command = "id_pub\n";
+    } else if (action === "x25519ClearPluto") {
+      // Clear X25519 session when message is received and decrypted
+      command = "x25519_clear\n";
+    } else {
       console.error("Unknown action:", action);
       return "ERROR: Unknown action";
     }
@@ -101,7 +109,10 @@ async function commandSerial( //background.js
       action === "singleAddPluto" ||
       action === "generatePasswordPluto" ||
       action === "samePasswordPluto" ||
-			action === "deleteKeyPluto"
+      action === "deleteKeyPluto" ||
+      action === "x25519GenPluto" ||
+      action === "idPubPluto" ||
+      action === "x25519ClearPluto"
     ) {
       let receivedData = "";
       while (true) {
@@ -166,7 +177,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
     } else if (message.action === "singleAddPluto") {
       responseAction = "singleAddResponse";
     } else if (message.action === "deleteKeyPluto") {
-            responseAction = "deleteKeyResponse";
+      responseAction = "deleteKeyResponse";
+    } else if (message.action === "x25519GenPluto") {
+      responseAction = "x25519GenResponse";
+    } else if (message.action === "idPubPluto") {
+      responseAction = "idPubResponse";
+    } else if (message.action === "x25519ClearPluto") {
+      responseAction = "x25519ClearResponse";
     } else {
       // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
       // we can simply send a success status and return.

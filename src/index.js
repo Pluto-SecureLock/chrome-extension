@@ -63,8 +63,6 @@ function parseExpirySelectionToSeconds(selection) {
   }
 }
 
-// TODO: Remove this mock toggle when device integration is available again.
-const ENABLE_MOCK_VAULT_RESPONSE = true;
 const SEND_NOTES_MAX_LENGTH = 60;
 
 // Helper function to handle sendMessage responses, ignoring specific errors
@@ -175,7 +173,6 @@ modifyOptionBtn.addEventListener('click', () => {
     isMenuOpen = false;
     enterEditMode(); // Enter edit mode
 });
-
 
 const deleteIcon = document.getElementById('deleteIcon');
 const deleteOptionBtn = document.getElementById('deleteOptionBtn');
@@ -844,22 +841,6 @@ function initSendSection() {
   sendNotesField.addEventListener('input', updateNotesCounter);
 
   retrieveVaultBtn.addEventListener('click', () => {
-    //----------------------------------------------------------
-    // TODO: Remove mock branch and keep only real showKeys flow.
-    if (ENABLE_MOCK_VAULT_RESPONSE) {
-      const mockKeys = [
-        'github.com',
-        'gmail.com',
-        'notion.so',
-        'amazon.com',
-        'linkedin.com'
-      ];
-      keys = mockKeys;
-      updateKeyList(mockKeys);
-      revealSendVaultPicker();
-      return;
-    }
-    // -----------------------------------------------------------
     document.getElementById('showKeysBtn').click();
   });
 

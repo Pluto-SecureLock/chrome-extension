@@ -20,7 +20,12 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content.js", "src/login-autofill.js", "src/password-autofill.js"]
+      "js": [
+        "src/content.js", 
+        "src/login-autofill.js", 
+        "src/password-autofill.js",
+        "src/receive-session.js",
+        "src/send-session.js"]
 
     }],
 
