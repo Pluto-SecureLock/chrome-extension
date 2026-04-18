@@ -402,6 +402,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === "bulkAddResponse") { // New action to handle bulkAdd response
         const rawData = message.data.trim().split("\n");
         console.log("Received Bulkadd response from content script:", rawData);
+    } else if (message.action === "getPubKeyResponse") {
+      const keyText = typeof message.data === "string" ? message.data.trim() : "";
+      console.log("Received getPubKey response:", {
+        action: message.action,
+        length: keyText.length,
+        preview: keyText ? `${keyText.slice(0, 24)}...` : "<empty>",
+      });
+    } else if (message.action === "signChallengeResponse") {
+      const signatureText = typeof message.data === "string" ? message.data.trim() : "";
+      console.log("Received signChallenge response:", {
+        length: signatureText.length,
+        preview: signatureText ? `${signatureText.slice(0, 24)}...` : "<empty>",
+        full: signatureText,
+      });
   } else if (message.action === "getKeyResponse") { // New action to handle getBtn response
         console.log("Received getKey data from content script:", message.data);
 
@@ -704,8 +718,8 @@ function initSendSection() {
     const receiverDeviceId = receiveDeviceField.value.trim();
     const receiverPublicKey = receivePublicKeyField.value.trim();
 
-    if (!plutoTagId || !receiverUserId || !receiverDeviceId || !receiverPublicKey) {
-      receiveResult.textContent = 'Please fill receiver tag, user, device, and public key.';
+    if (!plutoTagId || !receiverUserId || !receiverDeviceId) {
+      receiveResult.textContent = 'Please fill receiver tag, user, and device.';
       receiveResult.classList.remove('hidden');
       return;
     }
@@ -790,6 +804,7 @@ function initSendSection() {
         plutoTagId,
         receiverUserId,
         receiverDeviceId,
+        // Optional manual override; if empty, receive-session fetches x25519 key from device.
         receiverPublicKey,
       });
     };

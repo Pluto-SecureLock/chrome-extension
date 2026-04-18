@@ -1,9 +1,8 @@
-(function () {
-  const DEFAULT_HTTP_BASE_URL = "https://127.0.0.1:8080";
-  const DEFAULT_WS_BASE_URL = "wss://127.0.0.1:8080";
-  const DEFAULT_TIMEOUT_MS = 45000;
+const DEFAULT_HTTP_BASE_URL = "https://127.0.0.1:8080";
+const DEFAULT_WS_BASE_URL = "wss://127.0.0.1:8080";
+const DEFAULT_TIMEOUT_MS = 45000;
 
-  class ReceiveSessionManager {
+class ReceiveSessionManager {
     constructor(options) {
       const opts = options || {};
 
@@ -37,25 +36,44 @@
       const plutoTagId = (receiverContext.plutoTagId || "").trim();
       const receiverUserId = (receiverContext.receiverUserId || "").trim();
       const receiverDeviceId = (receiverContext.receiverDeviceId || "").trim();
-      const receiverPublicKey = (receiverContext.receiverPublicKey || "").trim();
       const nowSeconds = Math.floor(Date.now() / 1000);
       const expiresAt = Number(receiverContext.expiresAt) || nowSeconds + 900;
 
-      if (!plutoTagId || !receiverUserId || !receiverDeviceId || !receiverPublicKey) {
-        throw new Error("Receiver tag, user, device, and public key are required.");
+      if (!plutoTagId || !receiverUserId || !receiverDeviceId) {
+        throw new Error("Receiver tag, user, and device are required.");
       }
 
       try {
+        this.#setState("fetching-auth-key", "Fetching authentication public key from device...");
+        const receiverAuthPublicKey = await this.#fetchPublicKeyFromDevice();
+
+        this.#setState("auth-challenge", "Requesting auth challenge from hub...");
+        const challengePayload = await this.#requestAuthChallenge({
+          receiverUserId,
+          receiverDeviceId,
+          receiverAuthPublicKey,
+        });
+
+        this.#setState("auth-sign", "Signing auth challenge on device...");
+        const signatureHex = await this.#signAuthChallenge(challengePayload.payload);
+
+        this.#setState("auth-verify", "Verifying receiver authentication...");
+        const authResult = await this.#verifyAuthChallenge(challengePayload.challenge_id, signatureHex);
+
+        this.#setState("fetching-x25519", "Generating receiver X25519 public key...");
+        const receiverX25519PublicKey = (receiverContext.receiverPublicKey || "").trim() || await this.#fetchX25519PublicKeyFromDevice();
+
         this.#setState("create-session", "Creating receive session...");
         const sessionPayload = await this.#registerWaitingSession({
           plutoTagId,
           receiverUserId,
           receiverDeviceId,
-          receiverPublicKey,
+          receiverPublicKey: receiverX25519PublicKey,
+          authToken: authResult.auth_token,
           expiresAt,
         });
 
-        this.cache.publicKey = receiverPublicKey;
+        this.cache.publicKey = receiverX25519PublicKey;
         this.cache.publicKeyEndpoint = this.#buildPublicKeyEndpoint(plutoTagId);
 
         await this.#openWebSocket(receiverDeviceId);
@@ -108,6 +126,54 @@
       }
     }
 
+    async #fetchPublicKeyFromDevice() {
+      try {
+        return await new Promise((resolve, reject) => {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]) {
+              reject(new Error("No active tab"));
+              return;
+            }
+            chrome.tabs.sendMessage(
+              tabs[0].id,
+              { action: "getPubKeyPluto" },
+              (response) => {
+                if (chrome.runtime.lastError) {
+                  reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                  const rawResponse = response || {};
+                  if (rawResponse.error) {
+                    reject(new Error(rawResponse.error));
+                    return;
+                  }
+
+                  // content.js currently returns serial output as { status, data }.
+                  const maybePublicKey =
+                    typeof rawResponse.publicKey === "string"
+                      ? rawResponse.publicKey
+                      : typeof rawResponse.data === "string"
+                        ? rawResponse.data
+                        : "";
+
+                  const normalizedPublicKey = maybePublicKey.trim();
+                  console.debug("[receive-session] getPubKeyPluto raw response:", rawResponse);
+
+                  if (!normalizedPublicKey || normalizedPublicKey.startsWith("ERROR:")) {
+                    reject(new Error(`Device returned invalid public key: ${normalizedPublicKey || "<empty>"}`));
+                    return;
+                  }
+
+                  resolve(normalizedPublicKey);
+                }
+              }
+            );
+          });
+        });
+      } catch (error) {
+        throw new Error(`Failed to get public key from device: ${error.message}`);
+      }
+    }
+
     #setState(nextState, statusMessage) {
       this.state = nextState;
       this.onStatus(statusMessage);
@@ -125,8 +191,97 @@
           receiver_user_id: payload.receiverUserId,
           receiver_device_id: payload.receiverDeviceId,
           receiver_public_key: payload.receiverPublicKey,
+          receiver_x25519_public_key: payload.receiverPublicKey,
+          auth_token: payload.authToken,
           expires_at: payload.expiresAt,
         }),
+      });
+    }
+
+    async #requestAuthChallenge(payload) {
+      return await this.#requestJson("/v1/kdc/auth/challenge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          receiver_user_id: payload.receiverUserId,
+          receiver_device_id: payload.receiverDeviceId,
+          receiver_auth_public_key: payload.receiverAuthPublicKey,
+        }),
+      });
+    }
+
+    async #verifyAuthChallenge(challengeId, signatureHex) {
+      return await this.#requestJson("/v1/kdc/auth/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          challenge_id: challengeId,
+          signature_hex: signatureHex,
+        }),
+      });
+    }
+
+    async #signAuthChallenge(challengePayload) {
+      const signedValue = await this.#requestDeviceValue(
+        { action: "signChallengePluto", domain: challengePayload },
+        "signatureHex"
+      );
+
+      const normalized = (signedValue || "").trim();
+      if (!normalized || normalized.startsWith("ERROR:")) {
+        throw new Error(
+          `Device failed to sign auth challenge. Ensure firmware supports id_sign. Got: ${normalized || "<empty>"}`
+        );
+      }
+
+      return normalized;
+    }
+
+    async #fetchX25519PublicKeyFromDevice() {
+      const value = await this.#requestDeviceValue({ action: "x25519GenPluto" }, "data");
+      const normalized = (value || "").trim();
+
+      if (!normalized || normalized.startsWith("ERROR:")) {
+        throw new Error(`Device returned invalid X25519 public key: ${normalized || "<empty>"}`);
+      }
+
+      return normalized;
+    }
+
+    async #requestDeviceValue(requestPayload, preferredField) {
+      return await new Promise((resolve, reject) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (!tabs[0]) {
+            reject(new Error("No active tab"));
+            return;
+          }
+
+          chrome.tabs.sendMessage(tabs[0].id, requestPayload, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+
+            const rawResponse = response || {};
+            if (rawResponse.error) {
+              reject(new Error(rawResponse.error));
+              return;
+            }
+
+            const value =
+              typeof rawResponse[preferredField] === "string"
+                ? rawResponse[preferredField]
+                : typeof rawResponse.data === "string"
+                  ? rawResponse.data
+                  : "";
+
+            resolve(value);
+          });
+        });
       });
     }
 
@@ -216,7 +371,10 @@
       const response = await this.fetchImpl(`${this.httpBaseUrl}${path}`, options);
 
       if (!response.ok) {
-        throw new Error(`Request failed (${response.status} ${response.statusText}) for ${path}.`);
+        const errorBody = await response.text();
+        const compactBody = (errorBody || "").trim();
+        const suffix = compactBody ? ` Body: ${compactBody}` : "";
+        throw new Error(`Request failed (${response.status} ${response.statusText}) for ${path}.${suffix}`);
       }
 
       const contentType = response.headers.get("content-type") || "";
@@ -305,5 +463,4 @@
     }
   }
 
-  window.ReceiveSessionManager = ReceiveSessionManager;
-})();
+window.ReceiveSessionManager = ReceiveSessionManager;

@@ -85,9 +85,12 @@ async function commandSerial( //background.js
     } else if (action === "x25519GenPluto") {
       // Key exchange and secure end-to-end communication
       command = "x25519_gen\n";
-    } else if (action === "idPubPluto") {
+    } else if (action === "getPubKeyPluto") {
       // Get public identity key for authentication
       command = "id_pub\n";
+    } else if (action === "signChallengePluto") {
+      // Sign challenge payload with identity key.
+      command = "id_sign " + domain + "\n";
     } else if (action === "x25519ClearPluto") {
       // Clear X25519 session when message is received and decrypted
       command = "x25519_clear\n";
@@ -111,7 +114,8 @@ async function commandSerial( //background.js
       action === "samePasswordPluto" ||
       action === "deleteKeyPluto" ||
       action === "x25519GenPluto" ||
-      action === "idPubPluto" ||
+      action === "getPubKeyPluto" ||
+      action === "signChallengePluto" ||
       action === "x25519ClearPluto"
     ) {
       let receivedData = "";
@@ -180,8 +184,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
       responseAction = "deleteKeyResponse";
     } else if (message.action === "x25519GenPluto") {
       responseAction = "x25519GenResponse";
-    } else if (message.action === "idPubPluto") {
-      responseAction = "idPubResponse";
+    } else if (message.action === "getPubKeyPluto") {
+      responseAction = "getPubKeyResponse";
+    } else if (message.action === "signChallengePluto") {
+      responseAction = "signChallengeResponse";
     } else if (message.action === "x25519ClearPluto") {
       responseAction = "x25519ClearResponse";
     } else {
@@ -192,11 +198,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
     }
 
     // Send the response back to the extension popup (index.js)
-    chrome.runtime.sendMessage({
+    const payload = {
       action: responseAction,
       data: result, // Send the result from commandSerial
-    });
-    sendResponse({ status: "OK", data: result }); // Send the result back to the popup
+    };
+
+    if (message.action === "getPubKeyPluto") {
+      payload.publicKey = typeof result === "string" ? result.trim() : "";
+    } else if (message.action === "signChallengePluto") {
+      payload.signatureHex = typeof result === "string" ? result.trim() : "";
+    }
+
+    chrome.runtime.sendMessage(payload);
+
+    const directResponse = { status: "OK", data: result };
+    if (message.action === "getPubKeyPluto") {
+      directResponse.publicKey = typeof result === "string" ? result.trim() : "";
+    } else if (message.action === "signChallengePluto") {
+      directResponse.signatureHex = typeof result === "string" ? result.trim() : "";
+    }
+    sendResponse(directResponse); // Send the result back to the popup
 
     // This return true is important for sendResponse to work asynchronously
     // It signals that you will send a response later.
