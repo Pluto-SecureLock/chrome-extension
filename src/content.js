@@ -21,7 +21,8 @@ async function commandSerial( //background.js
   domain = "",
   secrets = "",
   username = "",
-  password = ""
+  password = "",
+  backupCommand = ""
 ) {
   // Add new parameters
   let writer; // Declare writer outside try block to be accessible in finally
@@ -94,6 +95,8 @@ async function commandSerial( //background.js
     } else if (action === "x25519ClearPluto") {
       // Clear X25519 session when message is received and decrypted
       command = "x25519_clear\n";
+    } else if (action === "backupPluto") {
+      command = `${backupCommand.trim()}\n`;
     } else {
       console.error("Unknown action:", action);
       return "ERROR: Unknown action";
@@ -116,7 +119,8 @@ async function commandSerial( //background.js
       action === "x25519GenPluto" ||
       action === "getPubKeyPluto" ||
       action === "signChallengePluto" ||
-      action === "x25519ClearPluto"
+      action === "x25519ClearPluto" ||
+      action === "backupPluto"
     ) {
       let receivedData = "";
       while (true) {
@@ -165,7 +169,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
       message.domain || "",
       message.secrets || "",
       message.username || "", // Pass username
-      message.password || "" // Pass password
+      message.password || "", // Pass password
+      message.backupCommand || "" // Pass backup command
     );
 
     // Dynamically determine the response action based on the original message action
@@ -190,6 +195,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { //back
       responseAction = "signChallengeResponse";
     } else if (message.action === "x25519ClearPluto") {
       responseAction = "x25519ClearResponse";
+    } else if (message.action === "backupPluto") {
+      responseAction = "backupResponse";
     } else {
       // For other actions like "typeKeyPluto", if index.js doesn't need a specific data response,
       // we can simply send a success status and return.
