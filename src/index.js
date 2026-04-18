@@ -4,6 +4,66 @@ let isPasswordVisible = false;
 let isEditMode = false;
 let isBulkMode = true;
 let isMenuOpen = false;
+let selectedBulkFile = null;
+let activeReceiveSession = null;
+
+function getPreferredReceiveEndpoints() {
+  const defaultHttp = 'https://127.0.0.1:8080';
+  const defaultWs = 'wss://127.0.0.1:8080';
+
+  return {
+    httpBaseUrl: (localStorage.getItem('receive_http_base_url') || defaultHttp).replace(/\/$/, ''),
+    wsBaseUrl: (localStorage.getItem('receive_ws_base_url') || defaultWs).replace(/\/$/, ''),
+  };
+}
+
+function toInsecureEndpoints(endpoints) {
+  return {
+    httpBaseUrl: endpoints.httpBaseUrl.replace(/^https:/i, 'http:'),
+    wsBaseUrl: endpoints.wsBaseUrl.replace(/^wss:/i, 'ws:'),
+  };
+}
+
+function canFallbackToInsecure(endpoints) {
+  return /^https:/i.test(endpoints.httpBaseUrl) || /^wss:/i.test(endpoints.wsBaseUrl);
+}
+
+function buildReceiveShareUrl(httpBaseUrl, token) {
+  const encodedTag = encodeURIComponent(token);
+  return `${httpBaseUrl}/v1/kdc/pubkey/${encodedTag}`;
+}
+
+function generateSessionToken() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+
+  return `sess-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function resolveSenderIdentity() {
+  return {
+    userId: (localStorage.getItem('send_user_id') || 'userA').trim(),
+    deviceId: (localStorage.getItem('send_device_id') || 'device-userA-1').trim(),
+  };
+}
+
+function parseExpirySelectionToSeconds(selection) {
+  switch (selection) {
+    case '30m':
+      return 30 * 60;
+    case '1h':
+      return 60 * 60;
+    case '1d':
+      return 24 * 60 * 60;
+    case '2d':
+      return 2 * 24 * 60 * 60;
+    default:
+      return 15 * 60;
+  }
+}
+
+const SEND_NOTES_MAX_LENGTH = 60;
 
 // Helper function to handle sendMessage responses, ignoring specific errors
 function handleSendMessageResponse(response) {
@@ -19,7 +79,6 @@ function handleSendMessageResponse(response) {
     }
 }
 
-
 // Populate currentMission with the current website hostname on load
 document.addEventListener("DOMContentLoaded", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -29,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let displayHostname = url.hostname;
 
                 // Check for the specific file URL to display example.com
-                if (url.protocol === 'file:' && url.pathname.includes('/pluto-secure/shared-library/login.html')) {
+                if (url.protocol === 'file:' && url.pathname.includes('/login.html')) {
                     displayHostname = "example.com";
                 }
 
@@ -44,6 +103,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     // Initialize bulk upload functionality
     initBulkUpload();
+
+    // Initialize send form functionality
+    initSendSection();
 
     // Initialize dark mode toggle
     initDarkMode();
@@ -71,6 +133,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             document.getElementById(`${targetTab}View`).classList.remove('hidden');
+
+            if (targetTab === 'send') {
+              resetWhisperModeSelection();
+            }
         });
     });
 
@@ -80,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ensure credential fields are hidden on load
     document.getElementById("credentialDisplay").classList.add("hidden");
     document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
+
 });
 
 const menuBtn = document.getElementById('menuBtn');
@@ -106,7 +173,6 @@ modifyOptionBtn.addEventListener('click', () => {
     isMenuOpen = false;
     enterEditMode(); // Enter edit mode
 });
-
 
 const deleteIcon = document.getElementById('deleteIcon');
 const deleteOptionBtn = document.getElementById('deleteOptionBtn');
@@ -139,7 +205,7 @@ function initDarkMode() {
   const moon = document.getElementById("moonIcon");
   const sun  = document.getElementById("sunIcon");
   const logo = document.getElementById("plutoLogo");
-  
+
   const LIGHT_LOGO = "./sources/Asset 3.svg";
   const DARK_LOGO  = "./sources/Asset 4.svg";
 
@@ -165,9 +231,9 @@ function initDarkMode() {
 document.getElementById("showKeysBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, handleSendMessageResponse); 
+      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, handleSendMessageResponse);
     });
-  }); 
+  });
 
 // Event listener for getBtn (This button is now inside credentialDisplay, so it will only be visible after credentials are shown)
 document.getElementById("getBtn").addEventListener("click", () => {
@@ -176,7 +242,7 @@ document.getElementById("getBtn").addEventListener("click", () => {
       let domainToSend = document.getElementById("currentSite").textContent;
       chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend}, handleSendMessageResponse);
     });
-  }); 
+  });
 
   // Event listener for typeBtn
 document.getElementById("typeBtn").addEventListener("click", () => {
@@ -190,7 +256,7 @@ document.getElementById("typeBtn").addEventListener("click", () => {
 
 // Event listener for bulkAddBtn (Send Secrets)
 document.getElementById("sendSecretsBtn").addEventListener("click", async () => {
-  const file = document.getElementById("fileInput").files[0];
+  const file = selectedBulkFile || document.getElementById("fileInput").files[0];
   if (!file) return alert("Select a .csv or .txt file first.");
 
   const text = await file.text();
@@ -202,6 +268,7 @@ document.getElementById("sendSecretsBtn").addEventListener("click", async () => 
       if (chrome.runtime.lastError) return alert("Error: " + chrome.runtime.lastError.message);
       alert("✅ Secrets sent!");
       document.getElementById("fileInput").value = "";
+      selectedBulkFile = null;
       document.getElementById("fileInfo").classList.add("hidden");
       document.getElementById("fileName").textContent = "";
       document.getElementById("sendSecretsBtn").disabled = true;
@@ -327,6 +394,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (listLine) {
       keys = JSON.parse(listLine.replace(/'/g, '"'));  // Update global keys
       updateKeyList(keys);
+      revealSendVaultPicker();
       document.getElementById("showKeysBtn").classList.add('hidden');
     } else {
       console.error("No valid key list found in response.");
@@ -334,6 +402,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === "bulkAddResponse") { // New action to handle bulkAdd response
         const rawData = message.data.trim().split("\n");
         console.log("Received Bulkadd response from content script:", rawData);
+    } else if (message.action === "getPubKeyResponse") {
+      const keyText = typeof message.data === "string" ? message.data.trim() : "";
+      console.log("Received getPubKey response:", {
+        action: message.action,
+        length: keyText.length,
+        preview: keyText ? `${keyText.slice(0, 24)}...` : "<empty>",
+      });
+    } else if (message.action === "signChallengeResponse") {
+      const signatureText = typeof message.data === "string" ? message.data.trim() : "";
+      console.log("Received signChallenge response:", {
+        length: signatureText.length,
+        preview: signatureText ? `${signatureText.slice(0, 24)}...` : "<empty>",
+        full: signatureText,
+      });
   } else if (message.action === "getKeyResponse") { // New action to handle getBtn response
         console.log("Received getKey data from content script:", message.data);
 
@@ -346,7 +428,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const colonIndex = dataString.indexOf(':');
         if (colonIndex !== -1) {
             let jsonPart = dataString.substring(colonIndex + 1).trim(); // This is the original jsonPart with potential trailing chars
-            
+
             // --- START OF NEW CODE FOR JSON PARSING FIX ---
             const firstBraceIndex = jsonPart.indexOf('{');
             const lastBraceIndex = jsonPart.lastIndexOf('}');
@@ -389,7 +471,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             document.getElementById("passwordField").textContent = "N/A";
         }
     }
-    else if (message.action === "updateKeyResponse") { 
+    else if (message.action === "updateKeyResponse") {
         const rawData = message.data.trim().split("\n");
         console.log("Received updateKey response from content script:", rawData);
         // You might want to update the UI further or just confirm success
@@ -402,6 +484,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 const searchInput = document.getElementById('searchInput');
 const suggestionsList = document.getElementById('suggestions');
 let keys = [];  // global keys list
+
+function refreshSendSecretOptions() {
+  const sendSecretField = document.getElementById('sendSecretField');
+  if (!sendSecretField) return;
+
+  const currentValue = sendSecretField.value;
+  sendSecretField.innerHTML = '<option value="">Choose a secret</option>';
+
+  keys.forEach(key => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = key;
+    sendSecretField.appendChild(option);
+  });
+
+  if (currentValue && keys.includes(currentValue)) {
+    sendSecretField.value = currentValue;
+  }
+}
+
+function revealSendVaultPicker() {
+  const retrieveVaultBtn = document.getElementById('retrieveVaultBtn');
+  const sendVaultSearchArea = document.getElementById('sendVaultSearchArea');
+
+  if (!retrieveVaultBtn || !sendVaultSearchArea) return;
+
+  retrieveVaultBtn.classList.add('hidden');
+  sendVaultSearchArea.classList.remove('hidden');
+  refreshSendSecretOptions();
+}
 
 
 searchInput.addEventListener('input', () => {
@@ -426,6 +538,7 @@ searchInput.addEventListener('input', () => {
  */
 function updateKeyList(newKeys) {
   keys = newKeys; // Update the global keys list
+  refreshSendSecretOptions();
   const keyCardsContainer = document.getElementById('keyCardsContainer');
   keyCardsContainer.innerHTML = ''; // Clear existing cards
 
@@ -459,7 +572,7 @@ function updateKeyList(newKeys) {
     cardDiv.addEventListener('click', (event) => {
         const clickedDomain = event.currentTarget.dataset.domain;
         document.getElementById("currentSite").textContent = clickedDomain;
-        
+
         // Trigger getKeyPluto to populate username/password fields for the clicked domain
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
@@ -467,12 +580,13 @@ function updateKeyList(newKeys) {
         });
     });
 
+
     // Event listener for the copy button (typekey action)
     const copyButton = cardDiv.querySelector('.type-button');
     copyButton.addEventListener('click', (event) => {
         event.stopPropagation(); // Prevent the card's click event from firing
         const domainToType = event.currentTarget.closest('[data-domain]').dataset.domain;
-        
+
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
             chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToType }, handleSendMessageResponse);
@@ -480,6 +594,422 @@ function updateKeyList(newKeys) {
         window.close(); // Close the extension window after typing
     });
   });
+}
+
+function initSendSection() {
+  const retrieveVaultBtn = document.getElementById('retrieveVaultBtn');
+  const sendSecretBtn = document.getElementById('sendSecretBtn');
+  const sendSecretField = document.getElementById('sendSecretField');
+  const sendNotesField = document.getElementById('sendNotesField');
+  const sendNotesCounter = document.getElementById('sendNotesCounter');
+  const sendToField = document.getElementById('sendToField');
+  const sendExpiryField = document.getElementById('sendExpiryField');
+  const sendUsesField = document.getElementById('sendUsesField');
+  const tabWhisperSend = document.getElementById('tabWhisperSend');
+  const tabWhisperReceive = document.getElementById('tabWhisperReceive');
+  const whisperTitle = document.getElementById('whisperTitle');
+  const whisperBackBtn = document.getElementById('whisperBackBtn');
+  const whisperModeSelector = document.getElementById('whisperModeSelector');
+  const whisperSendContainer = document.getElementById('whisperSendContainer');
+  const whisperReceiveContainer = document.getElementById('whisperReceiveContainer');
+  const whisperModeHint = document.getElementById('whisperModeHint');
+  const receiveSetupForm = document.getElementById('receiveSetupForm');
+  const receiveSecretBtn = document.getElementById('receiveSecretBtn');
+  const receiveTagField = document.getElementById('receiveTagField');
+  const receiveUserField = document.getElementById('receiveUserField');
+  const receiveDeviceField = document.getElementById('receiveDeviceField');
+  const receivePublicKeyField = document.getElementById('receivePublicKeyField');
+  const receiveEndpointInfo = document.getElementById('receiveEndpointInfo');
+  const receiveEndpointText = document.getElementById('receiveEndpointText');
+  const copyReceiveEndpointBtn = document.getElementById('copyReceiveEndpointBtn');
+  const receiveListeningIndicator = document.getElementById('receiveListeningIndicator');
+  const receiveSuccessIndicator = document.getElementById('receiveSuccessIndicator');
+  const receiveCiphertextInfo = document.getElementById('receiveCiphertextInfo');
+  const receiveSenderInfo = document.getElementById('receiveSenderInfo');
+  const receiveCiphertextText = document.getElementById('receiveCiphertextText');
+  const downloadReceivedCipherBtn = document.getElementById('downloadReceivedCipherBtn');
+  const receiveResult = document.getElementById('receiveResult');
+
+  if (!retrieveVaultBtn || !sendSecretBtn || !sendSecretField || !sendNotesField || !sendNotesCounter || !sendToField || !sendExpiryField || !sendUsesField || !tabWhisperSend || !tabWhisperReceive || !whisperTitle || !whisperBackBtn || !whisperModeSelector || !whisperSendContainer || !whisperReceiveContainer || !whisperModeHint || !receiveSetupForm || !receiveSecretBtn || !receiveTagField || !receiveUserField || !receiveDeviceField || !receivePublicKeyField || !receiveEndpointInfo || !receiveEndpointText || !copyReceiveEndpointBtn || !receiveListeningIndicator || !receiveSuccessIndicator || !receiveCiphertextInfo || !receiveSenderInfo || !receiveCiphertextText || !downloadReceivedCipherBtn || !receiveResult) {
+    return;
+  }
+
+  let latestReceivedSecret = null;
+
+  downloadReceivedCipherBtn.addEventListener('click', () => {
+    // Placeholder: download flow intentionally left empty for now.
+    return;
+  });
+
+  copyReceiveEndpointBtn.addEventListener('click', async () => {
+    const value = receiveEndpointText.textContent.trim();
+    if (!value) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const tempInput = document.createElement('input');
+        tempInput.value = value;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
+      copyReceiveEndpointBtn.innerHTML = 'Copied';
+      setTimeout(() => {
+        copyReceiveEndpointBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M10 20h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>';
+      }, 1200);
+    } catch (e) {
+      console.error('Could not copy receive URL:', e);
+      copyReceiveEndpointBtn.innerHTML = 'Error';
+      setTimeout(() => {
+        copyReceiveEndpointBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M10 20h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>';
+      }, 1200);
+    }
+  });
+
+  const setWhisperMode = (mode) => {
+    const isSend = mode === 'send';
+
+    tabWhisperSend.classList.toggle('custom-tab-active', isSend);
+    tabWhisperSend.classList.toggle('font-extrabold', isSend);
+
+    tabWhisperReceive.classList.toggle('custom-tab-active', !isSend);
+    tabWhisperReceive.classList.toggle('font-extrabold', !isSend);
+
+    whisperSendContainer.classList.toggle('hidden', !isSend);
+    whisperReceiveContainer.classList.toggle('hidden', isSend);
+    whisperTitle.textContent = isSend ? 'Send a Secret' : 'Receive a Secret';
+    whisperBackBtn.classList.remove('hidden');
+    whisperModeHint.classList.add('hidden');
+    whisperModeSelector.classList.add('hidden');
+
+    if (!isSend) {
+      receiveSetupForm.classList.remove('hidden');
+      receiveEndpointInfo.classList.add('hidden');
+      receiveEndpointText.textContent = '';
+      receiveResult.classList.add('hidden');
+      receiveResult.textContent = '';
+      receiveListeningIndicator.classList.add('hidden');
+      receiveSuccessIndicator.classList.add('hidden');
+      receiveCiphertextInfo.classList.add('hidden');
+      receiveSenderInfo.textContent = '';
+      receiveCiphertextText.textContent = '';
+      downloadReceivedCipherBtn.classList.add('hidden');
+      latestReceivedSecret = null;
+      receiveSecretBtn.textContent = 'Create Session';
+    }
+  };
+
+  tabWhisperSend.addEventListener('click', () => setWhisperMode('send'));
+  tabWhisperReceive.addEventListener('click', () => setWhisperMode('receive'));
+  whisperBackBtn.addEventListener('click', () => {
+    if (activeReceiveSession) {
+      activeReceiveSession.stop('user-back');
+      activeReceiveSession = null;
+    }
+    resetWhisperModeSelection();
+  });
+
+  receiveSecretBtn.addEventListener('click', async () => {
+    const plutoTagId = receiveTagField.value.trim();
+    const receiverUserId = receiveUserField.value.trim();
+    const receiverDeviceId = receiveDeviceField.value.trim();
+    const receiverPublicKey = receivePublicKeyField.value.trim();
+
+    if (!plutoTagId || !receiverUserId || !receiverDeviceId) {
+      receiveResult.textContent = 'Please fill receiver tag, user, and device.';
+      receiveResult.classList.remove('hidden');
+      return;
+    }
+
+    if (!plutoTagId.startsWith('@')) {
+      receiveResult.textContent = 'Receiver tag must start with @ (example: @userB).';
+      receiveResult.classList.remove('hidden');
+      return;
+    }
+
+    if (!window.ReceiveSessionManager) {
+      receiveResult.textContent = 'Receive engine not loaded.';
+      receiveResult.classList.remove('hidden');
+      return;
+    }
+
+    if (activeReceiveSession) {
+      activeReceiveSession.stop('restart');
+      activeReceiveSession = null;
+    }
+
+    receiveSecretBtn.disabled = true;
+    receiveResult.classList.remove('hidden');
+    receiveListeningIndicator.classList.add('hidden');
+    receiveSuccessIndicator.classList.add('hidden');
+    receiveCiphertextInfo.classList.add('hidden');
+    receiveSenderInfo.textContent = '';
+    receiveCiphertextText.textContent = '';
+    downloadReceivedCipherBtn.classList.add('hidden');
+    latestReceivedSecret = null;
+    receiveSecretBtn.textContent = 'Creating Session...';
+
+    const preferredEndpoints = getPreferredReceiveEndpoints();
+    receiveEndpointText.textContent = buildReceiveShareUrl(preferredEndpoints.httpBaseUrl, plutoTagId);
+    receiveEndpointInfo.classList.remove('hidden');
+
+    const startWithEndpoints = async (endpoints) => {
+      receiveEndpointText.textContent = buildReceiveShareUrl(endpoints.httpBaseUrl, plutoTagId);
+      receiveEndpointInfo.classList.remove('hidden');
+      activeReceiveSession = new window.ReceiveSessionManager({
+        httpBaseUrl: endpoints.httpBaseUrl,
+        wsBaseUrl: endpoints.wsBaseUrl,
+        onStatus: (message) => {
+          receiveResult.textContent = message;
+
+          const lower = message.toLowerCase();
+          const isListeningStage = lower.includes('listening') || lower.includes('waiting') || lower.includes('key populated');
+          receiveListeningIndicator.classList.toggle('hidden', !isListeningStage);
+
+          if (isListeningStage) {
+            receiveSetupForm.classList.add('hidden');
+            receiveSecretBtn.textContent = 'Session Active';
+            receiveEndpointText.textContent = buildReceiveShareUrl(endpoints.httpBaseUrl, plutoTagId);
+            receiveEndpointInfo.classList.remove('hidden');
+          }
+        },
+        onSecret: (secret) => {
+          console.log('Received secret payload:', secret);
+          latestReceivedSecret = secret && typeof secret === 'object' ? secret : { ciphertext: '' };
+
+          const fromUser = latestReceivedSecret.fromUser || 'unknown';
+          const fromDevice = latestReceivedSecret.fromDevice || 'unknown';
+          let ciphertextValue = '';
+
+          if (secret && typeof secret === 'object') {
+            ciphertextValue = secret.ciphertext || '';
+          }
+
+          if (!ciphertextValue) {
+            ciphertextValue = JSON.stringify(secret, null, 2);
+          }
+
+          receiveEndpointInfo.classList.add('hidden');
+          receiveSenderInfo.textContent = `From: ${fromUser} (${fromDevice})`;
+          receiveCiphertextText.textContent = ciphertextValue;
+          receiveCiphertextInfo.classList.remove('hidden');
+          downloadReceivedCipherBtn.classList.remove('hidden');
+        },
+      });
+
+      return await activeReceiveSession.start({
+        plutoTagId,
+        receiverUserId,
+        receiverDeviceId,
+        // Optional manual override; if empty, receive-session fetches x25519 key from device.
+        receiverPublicKey,
+      });
+    };
+
+    try {
+      await startWithEndpoints(preferredEndpoints);
+      receiveListeningIndicator.classList.add('hidden');
+      receiveSuccessIndicator.classList.remove('hidden');
+      receiveResult.textContent = 'Secret received, acknowledged, and session cleaned up.';
+    } catch (error) {
+      if (canFallbackToInsecure(preferredEndpoints)) {
+        try {
+          receiveResult.textContent = 'Secure endpoint failed. Retrying with insecure endpoint...';
+          receiveSecretBtn.textContent = 'Retrying Session...';
+          await startWithEndpoints(toInsecureEndpoints(preferredEndpoints));
+          receiveListeningIndicator.classList.add('hidden');
+          receiveSuccessIndicator.classList.remove('hidden');
+          receiveResult.textContent = 'Secret received via insecure endpoint, acknowledged, and session cleaned up.';
+        } catch (fallbackError) {
+          receiveSetupForm.classList.remove('hidden');
+          receiveListeningIndicator.classList.add('hidden');
+          receiveSuccessIndicator.classList.add('hidden');
+          receiveResult.textContent = `Receive flow failed: ${fallbackError.message}`;
+          console.error('Receive session failed (secure + fallback):', fallbackError);
+        }
+      } else {
+        receiveSetupForm.classList.remove('hidden');
+        receiveListeningIndicator.classList.add('hidden');
+        receiveSuccessIndicator.classList.add('hidden');
+        receiveResult.textContent = `Receive flow failed: ${error.message}`;
+        console.error('Receive session failed:', error);
+      }
+    } finally {
+      receiveSecretBtn.disabled = false;
+      receiveSecretBtn.textContent = 'Create Session';
+      activeReceiveSession = null;
+    }
+  });
+
+  refreshSendSecretOptions();
+
+  // Keep the notes length limit controlled from a single constant.
+  sendNotesField.maxLength = SEND_NOTES_MAX_LENGTH;
+
+  const updateNotesCounter = () => {
+    sendNotesCounter.textContent = `${sendNotesField.value.length}/${SEND_NOTES_MAX_LENGTH}`;
+  };
+  updateNotesCounter();
+  sendNotesField.addEventListener('input', updateNotesCounter);
+
+  retrieveVaultBtn.addEventListener('click', () => {
+    document.getElementById('showKeysBtn').click();
+  });
+
+  sendSecretBtn.addEventListener('click', () => {
+    const selectedSecret = sendSecretField.value;
+    const notes = sendNotesField.value.trim();
+
+    const payload = {
+      sourceType: selectedSecret ? 'vault' : 'notes',
+      secret: selectedSecret,
+      notes,
+      recipient: sendToField.value.trim(),
+      expiry: sendExpiryField.value,
+      uses: sendUsesField.value,
+    };
+
+    if (!payload.recipient) {
+      alert('Please enter who to send it to.');
+      return;
+    }
+
+    if (!payload.recipient.startsWith('@')) {
+      alert('Recipient must be a Pluto tag like @userB.');
+      return;
+    }
+
+    if (payload.notes.length > SEND_NOTES_MAX_LENGTH) {
+      alert(`Notes must be ${SEND_NOTES_MAX_LENGTH} characters or fewer.`);
+      return;
+    }
+
+    if (!payload.secret && !payload.notes) {
+      alert('Please choose a vault secret or add notes to share.');
+      return;
+    }
+
+    if (!window.SendSessionManager) {
+      alert('Send engine not loaded.');
+      return;
+    }
+
+    const sender = resolveSenderIdentity();
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = now + parseExpirySelectionToSeconds(payload.expiry);
+    const preferredEndpoints = getPreferredReceiveEndpoints();
+
+    const sendWithHttpBase = async (httpBaseUrl) => {
+      const manager = new window.SendSessionManager({
+        httpBaseUrl,
+        onStatus: (message) => {
+          console.log('[send-session]', message);
+        },
+      });
+
+      return await manager.send({
+        plutoTagId: payload.recipient,
+        fromUser: sender.userId,
+        fromDevice: sender.deviceId,
+        expiresAt,
+        secretPayload: {
+          sourceType: payload.sourceType,
+          secret: payload.secret,
+          notes: payload.notes,
+          uses: payload.uses,
+        },
+      });
+    };
+
+    sendSecretBtn.disabled = true;
+    sendSecretBtn.textContent = 'Sending...';
+
+    sendWithHttpBase(preferredEndpoints.httpBaseUrl)
+      .then((result) => {
+        console.log('Send flow result:', result);
+        alert(`Secret sent to ${payload.recipient}. Message id: ${result.sendResult.msg_id || 'n/a'}`);
+      })
+      .catch(async (error) => {
+        const canRetryInsecure = canFallbackToInsecure(preferredEndpoints);
+        if (!canRetryInsecure) {
+          console.error('Send flow failed:', error);
+          alert(`Send flow failed: ${error.message}`);
+          return;
+        }
+
+        try {
+          const insecureEndpoints = toInsecureEndpoints(preferredEndpoints);
+          console.warn('Secure send endpoint failed; retrying insecure endpoint...');
+          const result = await sendWithHttpBase(insecureEndpoints.httpBaseUrl);
+          console.log('Send flow result (insecure fallback):', result);
+          alert(`Secret sent to ${payload.recipient} using insecure fallback. Message id: ${result.sendResult.msg_id || 'n/a'}`);
+        } catch (fallbackError) {
+          console.error('Send flow failed (secure + fallback):', fallbackError);
+          alert(`Send flow failed: ${fallbackError.message}`);
+        }
+      })
+      .finally(() => {
+        sendSecretBtn.disabled = false;
+        sendSecretBtn.textContent = 'Send Secret';
+      });
+  });
+}
+
+function resetWhisperModeSelection() {
+  const tabWhisperSend = document.getElementById('tabWhisperSend');
+  const tabWhisperReceive = document.getElementById('tabWhisperReceive');
+  const whisperTitle = document.getElementById('whisperTitle');
+  const whisperBackBtn = document.getElementById('whisperBackBtn');
+  const whisperModeSelector = document.getElementById('whisperModeSelector');
+  const whisperSendContainer = document.getElementById('whisperSendContainer');
+  const whisperReceiveContainer = document.getElementById('whisperReceiveContainer');
+  const whisperModeHint = document.getElementById('whisperModeHint');
+  const receiveSetupForm = document.getElementById('receiveSetupForm');
+  const receiveCiphertextInfo = document.getElementById('receiveCiphertextInfo');
+  const receiveSenderInfo = document.getElementById('receiveSenderInfo');
+  const receiveCiphertextText = document.getElementById('receiveCiphertextText');
+  const downloadReceivedCipherBtn = document.getElementById('downloadReceivedCipherBtn');
+
+  if (!tabWhisperSend || !tabWhisperReceive || !whisperTitle || !whisperBackBtn || !whisperModeSelector || !whisperSendContainer || !whisperReceiveContainer || !whisperModeHint) {
+    return;
+  }
+
+  tabWhisperSend.classList.remove('custom-tab-active', 'bg-white', 'border-b-4', 'border-rio-blue');
+  tabWhisperReceive.classList.remove('custom-tab-active', 'bg-white', 'border-b-4', 'border-rio-blue');
+  tabWhisperSend.classList.add('text-rio-blue');
+  tabWhisperReceive.classList.add('text-rio-blue');
+  tabWhisperSend.classList.remove('font-extrabold');
+  tabWhisperReceive.classList.remove('font-extrabold');
+
+  whisperSendContainer.classList.add('hidden');
+  whisperReceiveContainer.classList.add('hidden');
+  whisperTitle.textContent = 'Whispers';
+  whisperBackBtn.classList.add('hidden');
+  whisperModeSelector.classList.remove('hidden');
+  whisperModeHint.classList.remove('hidden');
+
+  if (receiveSetupForm) {
+    receiveSetupForm.classList.remove('hidden');
+  }
+
+  if (receiveCiphertextInfo) {
+    receiveCiphertextInfo.classList.add('hidden');
+  }
+
+  if (receiveSenderInfo) {
+    receiveSenderInfo.textContent = '';
+  }
+
+  if (receiveCiphertextText) {
+    receiveCiphertextText.textContent = '';
+  }
+
+  if (downloadReceivedCipherBtn) {
+    downloadReceivedCipherBtn.classList.add('hidden');
+  }
 }
 
 function enterEditMode() {
@@ -573,6 +1103,7 @@ function initBulkUpload() {
   const uploadBtn = document.getElementById("sendSecretsBtn");
 
   const handleFile = (file) => {
+    selectedBulkFile = file;
     fileName.textContent = file.name;
     fileInfo.classList.remove("hidden");
     uploadBtn.disabled = false;
@@ -583,7 +1114,22 @@ function initBulkUpload() {
 
   // Input selection
   fileInput.addEventListener("change", e => {
-    if (e.target.files.length) handleFile(e.target.files[0]);
+    if (!e.target.files.length) {
+      selectedBulkFile = null;
+      return;
+    }
+
+    const file = e.target.files[0];
+    if (!/(\.csv|\.txt)$/i.test(file.name)) {
+      selectedBulkFile = null;
+      fileInput.value = "";
+      fileInfo.classList.add("hidden");
+      fileName.textContent = "";
+      uploadBtn.disabled = true;
+      return alert("Please upload a .csv or .txt file");
+    }
+
+    handleFile(file);
   });
 
   // Drag & drop visuals
