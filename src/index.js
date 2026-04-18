@@ -79,7 +79,6 @@ function handleSendMessageResponse(response) {
     }
 }
 
-
 // Populate currentMission with the current website hostname on load
 document.addEventListener("DOMContentLoaded", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -147,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ensure credential fields are hidden on load
     document.getElementById("credentialDisplay").classList.add("hidden");
     document.getElementById("clickToRetrieveMessage").classList.remove("hidden");
+
 });
 
 const menuBtn = document.getElementById('menuBtn');
@@ -205,7 +205,7 @@ function initDarkMode() {
   const moon = document.getElementById("moonIcon");
   const sun  = document.getElementById("sunIcon");
   const logo = document.getElementById("plutoLogo");
-  
+
   const LIGHT_LOGO = "./sources/Asset 3.svg";
   const DARK_LOGO  = "./sources/Asset 4.svg";
 
@@ -231,9 +231,9 @@ function initDarkMode() {
 document.getElementById("showKeysBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, handleSendMessageResponse); 
+      chrome.tabs.sendMessage(tabs[0].id, { action: "showKeysPluto" }, handleSendMessageResponse);
     });
-  }); 
+  });
 
 // Event listener for getBtn (This button is now inside credentialDisplay, so it will only be visible after credentials are shown)
 document.getElementById("getBtn").addEventListener("click", () => {
@@ -242,7 +242,7 @@ document.getElementById("getBtn").addEventListener("click", () => {
       let domainToSend = document.getElementById("currentSite").textContent;
       chrome.tabs.sendMessage(tabs[0].id, { action: "getKeyPluto", domain: domainToSend}, handleSendMessageResponse);
     });
-  }); 
+  });
 
   // Event listener for typeBtn
 document.getElementById("typeBtn").addEventListener("click", () => {
@@ -428,7 +428,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const colonIndex = dataString.indexOf(':');
         if (colonIndex !== -1) {
             let jsonPart = dataString.substring(colonIndex + 1).trim(); // This is the original jsonPart with potential trailing chars
-            
+
             // --- START OF NEW CODE FOR JSON PARSING FIX ---
             const firstBraceIndex = jsonPart.indexOf('{');
             const lastBraceIndex = jsonPart.lastIndexOf('}');
@@ -471,7 +471,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             document.getElementById("passwordField").textContent = "N/A";
         }
     }
-    else if (message.action === "updateKeyResponse") { 
+    else if (message.action === "updateKeyResponse") {
         const rawData = message.data.trim().split("\n");
         console.log("Received updateKey response from content script:", rawData);
         // You might want to update the UI further or just confirm success
@@ -572,7 +572,7 @@ function updateKeyList(newKeys) {
     cardDiv.addEventListener('click', (event) => {
         const clickedDomain = event.currentTarget.dataset.domain;
         document.getElementById("currentSite").textContent = clickedDomain;
-        
+
         // Trigger getKeyPluto to populate username/password fields for the clicked domain
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
@@ -586,7 +586,7 @@ function updateKeyList(newKeys) {
     copyButton.addEventListener('click', (event) => {
         event.stopPropagation(); // Prevent the card's click event from firing
         const domainToType = event.currentTarget.closest('[data-domain]').dataset.domain;
-        
+
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) return;
             chrome.tabs.sendMessage(tabs[0].id, { action: "typeKeyPluto", domain: domainToType }, handleSendMessageResponse);

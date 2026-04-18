@@ -20,7 +20,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content.js", "src/login-autofill.js", "src/password-autofill.js", "src/receive-session.js", "src/send-session.js"]
+      "js": ["src/content.js", "src/backup.js","src/login-autofill.js", "src/password-autofill.js", "src/receive-session.js", "src/send-session.js"]
     }],
 
 "icons": {
@@ -33,7 +33,8 @@
     "activeTab",
     "scripting",
     "windows",
-    "storage"
+    "storage",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"
