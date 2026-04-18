@@ -255,6 +255,55 @@ body.darkmode {
   box-shadow: 0 0 10px rgba(5,79,240,0.5);
 }
 
+/* === Send View (Dark Mode) === */
+.darkmode #sendView {
+  background-color: #121212;
+  color: #f1f5f9;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.darkmode #sendView .send-panel {
+  background-color: #1a1a1a;
+  border: 1px solid #2f2f2f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.darkmode #sendView input,
+.darkmode #sendView textarea,
+.darkmode #sendView select {
+  background-color: #1e1e1e;
+  color: #f1f5f9;
+  border-color: #333;
+}
+
+.darkmode #sendView input::placeholder,
+.darkmode #sendView textarea::placeholder {
+  color: #9ca3af;
+}
+
+.darkmode #sendView #retrieveVaultBtn {
+  background-color: #1e1e1e;
+  color: #7fa9ff;
+  border-color: #3b82f6;
+}
+
+.darkmode #sendView #retrieveVaultBtn:hover {
+  background-color: #222;
+}
+
+.darkmode #sendView #sendSecretBtn {
+  background-color: #054FF0;
+  border: none;
+}
+
+.darkmode #sendView #sendSecretBtn:hover {
+  box-shadow: 0 0 10px rgba(5,79,240,0.5);
+}
+
+.darkmode #sendView #sendNotesCounter {
+  color: #9ca3af;
+}
+
 /* === Bottom Navigation Bar (Dark Mode) === */
 /* Each button in the nav bar */
 .darkmode #bottomNavBar .tab-button {
